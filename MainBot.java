@@ -6,12 +6,14 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
+import java.lang.Math;
 
 import spacesettlers.actions.AbstractAction;
 import spacesettlers.actions.DoNothingAction;
 import spacesettlers.actions.MoveToObjectAction;
 import spacesettlers.actions.PurchaseCosts;
 import spacesettlers.actions.PurchaseTypes;
+import spacesettlers.actions.MoveAction;
 import spacesettlers.graphics.SpacewarGraphics;
 import spacesettlers.objects.AbstractActionableObject;
 import spacesettlers.objects.AbstractObject;
@@ -23,6 +25,8 @@ import spacesettlers.objects.powerups.SpaceSettlersPowerupEnum;
 import spacesettlers.objects.resources.ResourcePile;
 import spacesettlers.simulator.Toroidal2DPhysics;
 import spacesettlers.utilities.Position;
+import spacesettlers.utilities.Movement;
+import spacesettlers.utilities.Vector2D;
 
 /**
  * Modification of the aggressive heuristic asteroid collector to a team that only has one ship.  It 
@@ -75,16 +79,25 @@ public class AggressiveHeuristicAsteroidCollectorSingletonTeamClient extends Tea
 			Ship ship) {
 		AbstractAction current = ship.getCurrentAction();
 		Position currentPosition = ship.getPosition();
-
+		
+		//nullifies the previous action because it'll never reach its target if not 
+		ship.setCurrentAction(null);
+		
 		// aim for a beacon if there isn't enough energy
-		if (ship.getEnergy() < 2000) {
+		if (ship.getEnergy() < 1500) {
+			//attempt at teleporting the ship
+			if(ship.getEnergy() < 300){
+				ship = teleport(ship, beacon);
+			}
+			
 			Beacon beacon = pickNearestBeacon(space, ship);
 			AbstractAction newAction = null;
 			// if there is no beacon, then just skip a turn
 			if (beacon == null) {
 				newAction = new DoNothingAction();
 			} else {
-				newAction = new MoveToObjectAction(space, currentPosition, beacon);
+				newAction = nextVector(space,ship,beacon);
+				//newAction = new MoveToObjectAction(space, newCurrentPosition, beacon);
 			}
 			aimingForBase.put(ship.getId(), false);
 			shouldShoot = false;
@@ -92,9 +105,9 @@ public class AggressiveHeuristicAsteroidCollectorSingletonTeamClient extends Tea
 		}
 
 		// if the ship has enough resourcesAvailable, take it back to base
-		if (ship.getResources().getTotal() > 500) {
+		if (ship.getResources().getTotal() > 600) {
 			Base base = findNearestBase(space, ship);
-			AbstractAction newAction = new MoveToObjectAction(space, currentPosition, base);
+			AbstractAction newAction = nextVector(space,ship,base);
 			aimingForBase.put(ship.getId(), true);
 			shouldShoot = false;
 			return newAction;
@@ -122,12 +135,12 @@ public class AggressiveHeuristicAsteroidCollectorSingletonTeamClient extends Tea
 			// if there is no enemy nearby, go for an asteroid
 			if (enemy == null) {
 				if (asteroid != null) {
-					newAction = new MoveToObjectAction(space, currentPosition, asteroid);
+					newAction = nextVector(space,ship,asteroid);
 					shouldShoot = false;
 					return newAction;
 				} else {
 					// no enemy and no asteroid, just skip this turn (shouldn't happen often)
-					shouldShoot = true;
+					shouldShoot = false;
 					newAction = new DoNothingAction();
 					return newAction;
 				}
@@ -137,18 +150,18 @@ public class AggressiveHeuristicAsteroidCollectorSingletonTeamClient extends Tea
 			if (asteroid != null) {
 				double enemyDistance = space.findShortestDistance(ship.getPosition(), enemy.getPosition());
 				double asteroidDistance = space.findShortestDistance(ship.getPosition(), asteroid.getPosition());
-				
-				// we are aggressive, so aim for enemies if they are nearby
+					shouldShoot = false;
+				 //we are aggressive, so aim for enemies if they are nearby
 				if (enemyDistance < asteroidDistance) {
-					shouldShoot = true;
-					newAction = new MoveToObjectAction(space, currentPosition, enemy);
+					shouldShoot = false;
+					newAction = nextVector(space,ship,asteroid);
 				} else {
 					shouldShoot = false;
-					newAction = new MoveToObjectAction(space, currentPosition, asteroid);
+					newAction = nextVector(space,ship,asteroid);
 				}
 				return newAction;
 			} else {
-				newAction = new MoveToObjectAction(space, currentPosition, enemy);
+				newAction = nextVector(space,ship,asteroid);
 			}
 			return newAction;
 		}
@@ -157,7 +170,28 @@ public class AggressiveHeuristicAsteroidCollectorSingletonTeamClient extends Tea
 		return ship.getCurrentAction();
 	}
 
-
+	//probably doesn't work? teleport function to somewhere
+	private Ship teleport(Ship ship, Position target){
+		ship.setPosition(target);
+		return ship;
+	}
+	
+	
+	
+	//gets used to accelerate the ship to the next vector 
+	private AbstractAction nextVector(Toroidal2DPhysics space, Ship ship, AbstractObject target){
+		//get the direction it is going
+		Vector2D direction = space.findShortestDistanceVector(ship.getPosition(), target.getPosition());
+		Vector2D gotoPlace = new Vector2D();
+		//use that angle for which it is going to accelerate, and set the magnitude up
+		gotoPlace = gotoPlace.fromAngle(direction.getAngle(),Movement.MAX_TRANSLATIONAL_ACCELERATION*3);
+		//set the ship in motion
+		AbstractAction sendOff = new MoveAction(space ,ship.getPosition(), target.getPosition() , gotoPlace);
+		return sendOff;
+		
+	}
+	
+	
 	/**
 	 * Find the nearest ship on another team and aim for it
 	 * @param space
