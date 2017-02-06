@@ -10,7 +10,7 @@
 	
 	<!-- The name that shows up in the ladder -->
 	<!-- <ladderName>Aggressive Heuristic Asteroid Collector Team</ladderName> -->
-	<ladderName>Bradford Kann-Win</ladderName>
+	<ladderName>BaseBot</ladderName>
 	
 	<!-- The number of ships in the team.  Note, if this is bigger than the maximum number of allowable ships per team, it is ignored -->
 	<numberInitialShipsInTeam>1</numberInitialShipsInTeam>

@@ -1,4 +1,4 @@
-package brad9850;
+package spacesettlers.clients;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -30,7 +30,7 @@ import spacesettlers.utilities.Position;
  * 
  * @author amy
  */
-public class BaseBot extends spacesettlers.clients.TeamClient {
+public class DumbBaseBot extends TeamClient {
 	HashMap <UUID, Ship> asteroidToShipMap;
 	HashMap <UUID, Boolean> aimingForBase;
 	UUID asteroidCollectorID;
