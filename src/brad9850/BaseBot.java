@@ -90,9 +90,10 @@ public class BaseBot extends TeamClient {
 	private Base findNearestEnemyBase(Toroidal2DPhysics space, Ship ship) {
 		double minDistance = Double.MAX_VALUE;
 		Base nearestBase = null;
-
+		
+		//First, try to find the closest enemy base that belongs to a human team
 		for (Base base : space.getBases()) {
-			if (!base.getTeamName().equalsIgnoreCase(ship.getTeamName())) {
+			if (isHumanEnemyTeam(base.getTeamName(), ship.getTeamName())) {
 				double dist = space.findShortestDistance(ship.getPosition(), base.getPosition());
 				if (dist < minDistance) {
 					minDistance = dist;
@@ -100,7 +101,44 @@ public class BaseBot extends TeamClient {
 				}
 			}
 		}
+		
+		//If there is no other human enemy, pick the closest AI base
+		if(nearestBase == null){
+			for (Base base : space.getBases()) {
+				if (!base.getTeamName().equalsIgnoreCase(ship.getTeamName())) {
+					double dist = space.findShortestDistance(ship.getPosition(), base.getPosition());
+					if (dist < minDistance) {
+						minDistance = dist;
+						nearestBase = base;
+					}
+				}
+			}
+		}
+		
 		return nearestBase;
+	}
+	
+	/**
+	 * See if a team is a non-AI enemy
+	 * @param teamName The name of the team we are checking
+	 * @param friendlyTeamName The name of our team
+	 */
+	private boolean isHumanEnemyTeam(String teamName, String friendlyTeamName){
+		//See if it's our name
+		if(teamName.equalsIgnoreCase(friendlyTeamName)){
+			return false;
+		}
+
+		String[] aiNames = {"RandomTeam", "DoNothingTeam", "HeuristicTeam"};
+		//See if it's an AI name
+		for(String name: aiNames){
+			if(teamName.equalsIgnoreCase(name)){
+				return false;
+			}
+		}
+		
+		//Otherwise, it's a human enemy
+		return true;
 	}
 
 
