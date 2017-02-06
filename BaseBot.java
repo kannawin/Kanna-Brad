@@ -110,7 +110,13 @@ public class BaseBot extends TeamClient {
 	private AbstractObject findNearestEnemyBase(Toroidal2DPhysics space, Ship ship) {
 		double minDistance = Double.MAX_VALUE;
 		AbstractObject nearestBase = null;
-
+		
+		Ship enemyShip = nearestEnemy(space,ship);
+		if(enemyShip.getEnergy() < 1000){
+			return nearestBase;
+		}
+		
+		
 		for (Base base : space.getBases()) {
 			if(!base.getTeamName().equalsIgnoreCase(ship.getTeamName())){
 				//targets supplimentary bases first, why should they get more than one?
@@ -139,6 +145,7 @@ public class BaseBot extends TeamClient {
 		}
 		return nearestBase;
 	}
+	
 	/**
 	 * Finds the nearest enemy, because shooting at just bases can get boring.
 	 * 
@@ -147,9 +154,9 @@ public class BaseBot extends TeamClient {
 	 * @return
 	 * 
 	 */
-	private AbstractObject nearestEnemy(Toroidal2DPhysics space, Ship ship){
+	private Ship nearestEnemy(Toroidal2DPhysics space, Ship ship){
 		double nearest = Double.MAX_VALUE;
-		AbstractObject nearShip = null;
+		Ship nearShip = null;
 		for(Ship notUs : space.getShips()){
 			if(!notUs.getTeamName().equalsIgnoreCase(ship.getTeamName())){
 				double distance = space.findShortestDistance(ship.getPosition(), notUs.getPosition());
