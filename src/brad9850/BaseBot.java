@@ -1,4 +1,4 @@
-package spacesettlers.clients;
+package brad9850;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -23,6 +23,8 @@ import spacesettlers.objects.powerups.SpaceSettlersPowerupEnum;
 import spacesettlers.objects.resources.ResourcePile;
 import spacesettlers.simulator.Toroidal2DPhysics;
 import spacesettlers.utilities.Position;
+
+import spacesettlers.clients.TeamClient;
 
 /**
  * Modification of the aggressive heuristic asteroid collector to a team that only has one ship.  It 
