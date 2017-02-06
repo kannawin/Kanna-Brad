@@ -111,10 +111,7 @@ public class BaseBot extends TeamClient {
 		double minDistance = Double.MAX_VALUE;
 		AbstractObject nearestBase = null;
 		
-		Ship enemyShip = nearestEnemy(space,ship);
-		if(enemyShip.getEnergy() < 1000){
-			return nearestBase;
-		}
+
 		
 		
 		for (Base base : space.getBases()) {
