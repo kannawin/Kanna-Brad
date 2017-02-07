@@ -2,6 +2,7 @@ package brad9850;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
@@ -26,7 +27,7 @@ import spacesettlers.simulator.Toroidal2DPhysics;
 import spacesettlers.utilities.Position;
 import spacesettlers.utilities.Movement;
 import spacesettlers.utilities.Vector2D;
-
+import brad9850.Functions;
 import spacesettlers.clients.TeamClient;
 
 /**
@@ -76,165 +77,34 @@ public class ChaseBot extends TeamClient {
 		AbstractAction current = ship.getCurrentAction();
 		Position currentPosition = ship.getPosition();
 		
+		Functions functions = new Functions();
+		
 		//nullify from previous action
 		ship.setCurrentAction(null);
 		
 		AbstractAction newAction = null;
 		
 		//find the traitor shooting the base, if there is one, else get the next target
-		AbstractObject traitor = isEnemyNearBase(space,ship);
-		AbstractObject nextTarget = findNearestEnemyBase(space,ship);
+		AbstractObject traitor = functions.isEnemyNearBase(space,ship);
+		AbstractObject nextTarget = functions.findNearestEnemyBase(space,ship);
+
 		
 		//dont want to shoot beacons when searching for them
 		shouldShoot = false;
 		if(ship.getEnergy() > 2000){
 			shouldShoot = true;
 			if(traitor != null)
-				newAction = nextVector(space,ship,traitor);
-			else if(!boost)
-				newAction = new MoveToObjectAction(space, currentPosition, nextTarget);
-			else
-				newAction = nextVector(space,ship,nextTarget);
+				newAction = functions.advancedMovementVector( space, ship, traitor, 200);
+			else 
+				newAction = functions.advancedMovementVector(space,ship,nextTarget, 200);	
 		}
 		else{
-			newAction = nextVector(space,ship,nearestBeacon(space,ship));
+			newAction = functions.advancedMovementVector(space,ship,functions.nearestBeacon(space,ship), 150);
 		}
 		return newAction;
 	}
 	
-	/**
-	 * Find the base for an enemy team nearest to this ship
-	 * 
-	 * @param space
-	 * @param ship
-	 * @return
-	 */
-	private AbstractObject findNearestEnemyBase(Toroidal2DPhysics space, Ship ship) {
-		double minDistance = Double.MAX_VALUE;
-		AbstractObject nearestBase = null;
-		
-		
-		for (Base base : space.getBases()) {
-			if(!base.getTeamName().equalsIgnoreCase(ship.getTeamName())){
-				//targets supplimentary bases first, why should they get more than one?
-				if(!base.isHomeBase()){
-					double dist = space.findShortestDistance(ship.getPosition(), base.getPosition());
-					if(dist < minDistance) {
-						minDistance = dist;
-						nearestBase = base;
-						this.boost = false;
-					}
-				}
-				//only will target home bases if they have energy to kill
-				else if (base.isHomeBase() && base.getHealingEnergy() > 250) {
-					double dist = space.findShortestDistance(ship.getPosition(), base.getPosition());
-					if (dist < minDistance) {
-						minDistance = dist;
-						nearestBase = base;
-						this.boost = false;
-					}
-				}
-				else{
-					this.boost = true;
-					nearestBase = nearestEnemy(space,ship);
-				}
-			}
-		}
-		return nearestBase;
-	}
 	
-	/**
-	 * Finds the nearest enemy, because shooting at just bases can get boring.
-	 * 
-	 * @param space
-	 * @param ship
-	 * @return
-	 * 
-	 */
-	private Ship nearestEnemy(Toroidal2DPhysics space, Ship ship){
-		double nearest = Double.MAX_VALUE;
-		Ship nearShip = null;
-		for(Ship notUs : space.getShips()){
-			if(!notUs.getTeamName().equalsIgnoreCase(ship.getTeamName())){
-				double distance = space.findShortestDistance(ship.getPosition(), notUs.getPosition());
-				if(distance < nearest){
-					nearest = distance;
-					nearShip = notUs;
-				}
-			}
-		}
-		return nearShip;
-	}
-	
-	/**
-	 * Use if your ship needs to eat
-	 * 
-	 * @param space
-	 * @param ship
-	 * @return
-	 */
-	private AbstractObject nearestBeacon(Toroidal2DPhysics space, Ship ship){
-		double nearest = Double.MAX_VALUE;
-		AbstractObject energy = null;
-		for(Beacon power : space.getBeacons()){
-			double distance = space.findShortestDistance(ship.getPosition(), power.getPosition());
-			if(distance < nearest){
-				nearest = distance;
-				energy = power;
-			}
-		}
-		return energy;
-	}
-	
-	/**
-	 * checks the base for an enemy
-	 * 
-	 * @param space
-	 * @param ship
-	 * @return
-	 */
-	private AbstractObject isEnemyNearBase(Toroidal2DPhysics space, Ship ship){
-		for(Ship notUs : space.getShips()){
-			for(Base us : space.getBases()){
-				if(!notUs.getTeamName().equalsIgnoreCase(ship.getTeamName()) && us.getTeamName().equalsIgnoreCase(ship.getTeamName())){
-					if(notUs.getPosition().getX() < (us.getPosition().getX() + 50) && 
-							notUs.getPosition().getX() > (us.getPosition().getX() - 50)){
-						if(notUs.getPosition().getY() < (us.getPosition().getY() + 50) &&
-								notUs.getPosition().getY() > (us.getPosition().getY() - 50)){
-							return notUs;
-						}
-					}
-				}
-			}
-		}
-		return null;
-	}
-	
-	 
-	
-	
-	/**
-	 * Goes to the next location quickly, currently max velocity is at 4*max_accel
-	 * Because it gets out of control, it's toned down to 3*max_accel
-	 * 
-	 * @param space
-	 * @param ship
-	 * @param target
-	 * @return
-	 */
-	private AbstractAction nextVector(Toroidal2DPhysics space, Ship ship, AbstractObject target){
-		//get the direction it is going
-		Vector2D direction = space.findShortestDistanceVector(ship.getPosition(), target.getPosition());
-		Vector2D gotoPlace = new Vector2D();
-		//use that angle for which it is going to accelerate, and set the magnitude up
-		gotoPlace = gotoPlace.fromAngle(direction.getAngle(),Movement.MAX_TRANSLATIONAL_ACCELERATION*3);
-		//set the ship in motion
-		AbstractAction sendOff = new MoveAction(space ,ship.getPosition(), target.getPosition() , gotoPlace);
-		return sendOff;
-		
-	}
-	
-
 	
 
 	@Override
