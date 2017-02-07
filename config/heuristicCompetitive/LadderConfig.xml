@@ -4,7 +4,7 @@
 	<numRepeatMatches>3</numRepeatMatches>
 
 	<!-- The maximum number of variable (e.g. can change each match) teams in a game -->
-	<maximumNumberVariableTeams>1</maximumNumberVariableTeams>
+	<maximumNumberVariableTeams>3</maximumNumberVariableTeams>
 	
 	<!-- Write out the results to this file -->
 	<outputFileName>self-ladder.html</outputFileName>
@@ -26,7 +26,7 @@
 			<initialRegionRadius>300</initialRegionRadius>
 		</HighLevelTeamConfig>
 		<HighLevelTeamConfig>
-			<teamName>HeuristicMinerTeam</teamName>
+			<teamName>HeuristicTeam</teamName>
 			<configFile>aggressive-heuristic-clientinit.xml</configFile>
 			<initialRegionCenterX>640</initialRegionCenterX>
 			<initialRegionCenterY>400</initialRegionCenterY>
@@ -40,6 +40,14 @@
 		<HighLevelTeamConfig>
 			<teamName>DoNothingTeam</teamName>
 			<configFile>donothing-clientinit.xml</configFile>
+		</HighLevelTeamConfig>
+		<HighLevelTeamConfig>
+			<teamName><b>BaseBot</b></teamName>
+			<configFile>BaseBot-clientinit.xml</configFile>
+		</HighLevelTeamConfig>
+		<HighLevelTeamConfig>
+			<teamName>ChaseBot</teamName>
+			<configFile>ChaseBot-clientinit.xml</configFile>
 		</HighLevelTeamConfig>
 	</variableTeams>
 
