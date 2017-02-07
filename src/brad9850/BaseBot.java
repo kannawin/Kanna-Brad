@@ -10,12 +10,9 @@ import java.util.UUID;
 
 import spacesettlers.actions.*;
 import spacesettlers.graphics.SpacewarGraphics;
-import spacesettlers.graphics.*;
 import spacesettlers.objects.AbstractActionableObject;
 import spacesettlers.objects.AbstractObject;
-import spacesettlers.objects.Asteroid;
 import spacesettlers.objects.Base;
-import spacesettlers.objects.Beacon;
 import spacesettlers.objects.Ship;
 import spacesettlers.objects.powerups.SpaceSettlersPowerupEnum;
 import spacesettlers.objects.resources.ResourcePile;
