@@ -73,12 +73,14 @@ public class BaseBot extends TeamClient {
 
 		AbstractAction newAction = null;
 		
+		
 		Base targetBase = findNearestEnemyBase(space, ship);
-		shouldShoot = true;
+		shouldShoot = false;
+		if(Functions.isAimingAtTarget(space, ship, targetBase)){
+			shouldShoot = true;
+		}
 		
 		newAction = new MoveToObjectAction(space, currentPosition, targetBase);
-		
-		
 		return newAction;
 	}
 	
