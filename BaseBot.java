@@ -26,6 +26,7 @@ import spacesettlers.simulator.Toroidal2DPhysics;
 import spacesettlers.utilities.Position;
 import spacesettlers.utilities.Movement;
 import spacesettlers.utilities.Vector2D;
+import spacesettlers.clients.TeamClient;
 
 /**
  * Modification of the aggressive heuristic asteroid collector to a team that only has one ship.  It 
