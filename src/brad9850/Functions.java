@@ -49,5 +49,23 @@ public class Functions{
 		return true;
 	}
 	
+	/**
+	 * See if a ship is pointed at at target, so that if it shoots it'll hit it
+	 * @param ship
+	 * @param target
+	 * @return
+	 */
+	public static boolean aimingAtTarget(Ship ship, AbstractObject target){
+		double shipX = ship.getPosition().getX();
+		double shipY = ship.getPosition().getY();
+		double shipOrientation = ship.getPosition().getOrientation(); 
+		
+		double targetX = target.getPosition().getX();
+		double targetY = target.getPosition().getY();
+		
+		
+		return true;
+	}
+	
 	
 }

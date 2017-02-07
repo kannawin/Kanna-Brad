@@ -2,17 +2,15 @@ package brad9850;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
 
-import spacesettlers.actions.AbstractAction;
-import spacesettlers.actions.DoNothingAction;
-import spacesettlers.actions.MoveToObjectAction;
-import spacesettlers.actions.PurchaseCosts;
-import spacesettlers.actions.PurchaseTypes;
+import spacesettlers.actions.*;
 import spacesettlers.graphics.SpacewarGraphics;
+import spacesettlers.graphics.*;
 import spacesettlers.objects.AbstractActionableObject;
 import spacesettlers.objects.AbstractObject;
 import spacesettlers.objects.Asteroid;
@@ -26,6 +24,7 @@ import spacesettlers.utilities.Position;
 
 import spacesettlers.clients.TeamClient;
 import brad9850.Functions;
+import brad9850.DrawFunctions;
 
 /**
  * Modification of the aggressive heuristic asteroid collector to a team that only has one ship.  It 
@@ -34,10 +33,6 @@ import brad9850.Functions;
  * @author amy
  */
 public class BaseBot extends TeamClient {
-	HashMap <UUID, Ship> asteroidToShipMap;
-	HashMap <UUID, Boolean> aimingForBase;
-	UUID asteroidCollectorID;
-	double weaponsProbability = 1;
 	boolean shouldShoot = false;
 
 	/**
@@ -71,13 +66,19 @@ public class BaseBot extends TeamClient {
 	 */
 	private AbstractAction getAction(Toroidal2DPhysics space,
 			Ship ship) {
+		DrawFunctions.Refresh();
+		
 		AbstractAction current = ship.getCurrentAction();
 		Position currentPosition = ship.getPosition();
 
 		AbstractAction newAction = null;
 		
+		Base targetBase = findNearestEnemyBase(space, ship);
 		shouldShoot = true;
-		newAction = new MoveToObjectAction(space, currentPosition, findNearestEnemyBase(space, ship));
+		
+		newAction = new MoveToObjectAction(space, currentPosition, targetBase);
+		
+		
 		return newAction;
 	}
 	
@@ -122,28 +123,11 @@ public class BaseBot extends TeamClient {
 
 	@Override
 	public void getMovementEnd(Toroidal2DPhysics space, Set<AbstractActionableObject> actionableObjects) {
-		ArrayList<Asteroid> finishedAsteroids = new ArrayList<Asteroid>();
-
-		for (UUID asteroidId : asteroidToShipMap.keySet()) {
-			Asteroid asteroid = (Asteroid) space.getObjectById(asteroidId);
-			if (asteroid != null && !asteroid.isAlive()) {
-				finishedAsteroids.add(asteroid);
-				//System.out.println("Removing asteroid from map");
-			}
-		}
-
-		for (Asteroid asteroid : finishedAsteroids) {
-			asteroidToShipMap.remove(asteroid);
-		}
-
 
 	}
 
 	@Override
 	public void initialize(Toroidal2DPhysics space) {
-		asteroidToShipMap = new HashMap<UUID, Ship>();
-		asteroidCollectorID = null;
-		aimingForBase = new HashMap<UUID, Boolean>();
 	}
 
 	@Override
@@ -154,8 +138,10 @@ public class BaseBot extends TeamClient {
 
 	@Override
 	public Set<SpacewarGraphics> getGraphics() {
-		// TODO Auto-generated method stub
-		return null;
+		HashSet<SpacewarGraphics> graphics = new HashSet<SpacewarGraphics>();
+		graphics.addAll(DrawFunctions.GetGraphics());
+		DrawFunctions.Refresh();
+		return graphics;
 	}
 
 	@Override
@@ -169,65 +155,6 @@ public class BaseBot extends TeamClient {
 			PurchaseCosts purchaseCosts) {
 
 		HashMap<UUID, PurchaseTypes> purchases = new HashMap<UUID, PurchaseTypes>();
-		double BASE_BUYING_DISTANCE = 200;
-		boolean bought_base = false;
-
-		if (purchaseCosts.canAfford(PurchaseTypes.BASE, resourcesAvailable)) {
-			for (AbstractActionableObject actionableObject : actionableObjects) {
-				if (actionableObject instanceof Ship) {
-					Ship ship = (Ship) actionableObject;
-					Set<Base> bases = space.getBases();
-
-					// how far away is this ship to a base of my team?
-					double maxDistance = Double.MIN_VALUE;
-					for (Base base : bases) {
-						if (base.getTeamName().equalsIgnoreCase(getTeamName())) {
-							double distance = space.findShortestDistance(ship.getPosition(), base.getPosition());
-							if (distance > maxDistance) {
-								maxDistance = distance;
-							}
-						}
-					}
-
-					if (maxDistance > BASE_BUYING_DISTANCE) {
-						purchases.put(ship.getId(), PurchaseTypes.BASE);
-						bought_base = true;
-						//System.out.println("Buying a base!!");
-						break;
-					}
-				}
-			}		
-		} 
-		
-		// see if you can buy EMPs
-		if (purchaseCosts.canAfford(PurchaseTypes.POWERUP_EMP_LAUNCHER, resourcesAvailable)) {
-			for (AbstractActionableObject actionableObject : actionableObjects) {
-				if (actionableObject instanceof Ship) {
-					Ship ship = (Ship) actionableObject;
-					
-					if (!ship.getId().equals(asteroidCollectorID) && !ship.isValidPowerup(PurchaseTypes.POWERUP_EMP_LAUNCHER.getPowerupMap())) {
-						purchases.put(ship.getId(), PurchaseTypes.POWERUP_EMP_LAUNCHER);
-					}
-				}
-			}		
-		} 
-		
-
-		// can I buy a ship?
-		if (purchaseCosts.canAfford(PurchaseTypes.SHIP, resourcesAvailable) && bought_base == false) {
-			for (AbstractActionableObject actionableObject : actionableObjects) {
-				if (actionableObject instanceof Base) {
-					Base base = (Base) actionableObject;
-					
-					purchases.put(base.getId(), PurchaseTypes.SHIP);
-					break;
-				}
-
-			}
-
-		}
-
-
 		return purchases;
 	}
 
@@ -246,7 +173,7 @@ public class BaseBot extends TeamClient {
 		Random random = new Random();
 		for (AbstractActionableObject actionableObject : actionableObjects){
 			SpaceSettlersPowerupEnum powerup = SpaceSettlersPowerupEnum.values()[random.nextInt(SpaceSettlersPowerupEnum.values().length)];
-			if (actionableObject.isValidPowerup(powerup) && random.nextDouble() < weaponsProbability && shouldShoot){
+			if (actionableObject.isValidPowerup(powerup) && shouldShoot){
 				powerUps.put(actionableObject.getId(), powerup);
 			}
 		}
