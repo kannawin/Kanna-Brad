@@ -27,9 +27,22 @@ public class DrawFunctions {
 	}
 	
 	public static void DrawLine(Toroidal2DPhysics space, int x0, int y0, int x1, int y1){
-		LineGraphics line = new LineGraphics(new Position(x0, y0), new Position(x1, y1), 
-				space.findShortestDistanceVector(new Position(x0, y0), new Position(x1, y1)));
-		line.setLineColor(color);
-		graphicsToAdd.add(line);
+		DrawLine(space, x0, y0, x1, y1, true);
+	}
+	
+	public static void DrawLine(Toroidal2DPhysics space, int x0, int y0, int x1, int y1, boolean wrap){
+		Position start = new Position(x0, y0);
+		Position end = new Position(x1, y1);
+		Vector2D line;
+		if(wrap){
+			line = space.findShortestDistanceVector(start, end);
+		}
+		else{
+			line = new Vector2D(x1 - x0, y1 - y0);
+		}
+		
+		LineGraphics drawLine = new LineGraphics(start, end, line);
+		drawLine.setLineColor(color);
+		graphicsToAdd.add(drawLine);
 	}
 }
