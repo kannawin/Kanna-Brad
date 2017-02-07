@@ -4,9 +4,9 @@
 	<classname>brad9850.ChaseBot</classname>
 	
 	<!-- You can choose the color your team's ships will be on the screen.  Specify the red, green, and blue components -->
-	<teamColorRed>0</teamColorRed>
+	<teamColorRed>255</teamColorRed>
 	<teamColorGreen>255</teamColorGreen>
-	<teamColorBlue>255</teamColorBlue>
+	<teamColorBlue>20</teamColorBlue>
 	
 	<!-- The name that shows up in the ladder -->
 	<!-- <ladderName>Aggressive Heuristic Asteroid Collector Team</ladderName> -->
