@@ -25,6 +25,7 @@ import spacesettlers.simulator.Toroidal2DPhysics;
 import spacesettlers.utilities.Position;
 
 import spacesettlers.clients.TeamClient;
+import brad9850.Functions;
 
 /**
  * Modification of the aggressive heuristic asteroid collector to a team that only has one ship.  It 
@@ -93,7 +94,7 @@ public class BaseBot extends TeamClient {
 		
 		//First, try to find the closest enemy base that belongs to a human team
 		for (Base base : space.getBases()) {
-			if (isHumanEnemyTeam(base.getTeamName(), ship.getTeamName())) {
+			if (Functions.isHumanEnemyTeam(base.getTeamName(), ship.getTeamName())) {
 				double dist = space.findShortestDistance(ship.getPosition(), base.getPosition());
 				if (dist < minDistance) {
 					minDistance = dist;
@@ -116,29 +117,6 @@ public class BaseBot extends TeamClient {
 		}
 		
 		return nearestBase;
-	}
-	
-	/**
-	 * See if a team is a non-AI enemy
-	 * @param teamName The name of the team we are checking
-	 * @param friendlyTeamName The name of our team
-	 */
-	private boolean isHumanEnemyTeam(String teamName, String friendlyTeamName){
-		//See if it's our name
-		if(teamName.equalsIgnoreCase(friendlyTeamName)){
-			return false;
-		}
-
-		String[] aiNames = {"RandomTeam", "DoNothingTeam", "HeuristicTeam"};
-		//See if it's an AI name
-		for(String name: aiNames){
-			if(teamName.equalsIgnoreCase(name)){
-				return false;
-			}
-		}
-		
-		//Otherwise, it's a human enemy
-		return true;
 	}
 
 
