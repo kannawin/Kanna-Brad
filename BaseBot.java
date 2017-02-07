@@ -83,13 +83,14 @@ public class BaseBot extends TeamClient {
 		AbstractObject traitor = isEnemyNearBase(space,ship);
 		AbstractObject nextTarget = findNearestEnemyBase(space,ship);
 		
+		System.out.println(this.boost);
 		//dont want to shoot beacons when searching for them
 		shouldShoot = false;
 		if(ship.getEnergy() > 2000){
 			shouldShoot = true;
 			if(traitor != null)
 				newAction = nextVector(space,ship,traitor);
-			else if(!boost)
+			else if(this.boost == false)
 				newAction = new MoveToObjectAction(space, currentPosition, nextTarget);
 			else
 				newAction = nextVector(space,ship,nextTarget);
@@ -110,8 +111,6 @@ public class BaseBot extends TeamClient {
 	private AbstractObject findNearestEnemyBase(Toroidal2DPhysics space, Ship ship) {
 		double minDistance = Double.MAX_VALUE;
 		AbstractObject nearestBase = null;
-		
-
 		
 		
 		for (Base base : space.getBases()) {
