@@ -286,8 +286,6 @@ public class Functions{
 		//	Bottom is positive, also going from Pi (left side) to 0 (right side)
 		//	Units are radians
 		double shipOrientation = ship.getPosition().getOrientation();
-		
-		//Using the distance function here: http://math.stackexchange.com/questions/275529/check-if-line-intersects-with-circles-perimeter
 		double a = Math.tan(shipOrientation);
 		double b = -1;
 		double c = shipY - a * shipX;
@@ -313,9 +311,11 @@ public class Functions{
 			targetX -= space.getWidth();
 		}
 		
+		//Distance from line to center of object
+		//Using the distance function here: http://math.stackexchange.com/questions/275529/check-if-line-intersects-with-circles-perimeter
 		double distanceToTargetCenter = Math.abs(a * targetX + b * targetY + c) / Math.sqrt(a*a + b*b);
 		
-		if(distanceToTargetCenter <= target.getRadius() + Missile.MISSILE_RADIUS){
+		if(distanceToTargetCenter <= target.getRadius() + Missile.MISSILE_RADIUS - 1){
 			return true;
 		}
 		else{
