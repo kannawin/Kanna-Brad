@@ -23,6 +23,7 @@ import spacesettlers.objects.Beacon;
 import spacesettlers.objects.Ship;
 import spacesettlers.objects.powerups.SpaceSettlersPowerupEnum;
 import spacesettlers.objects.resources.ResourcePile;
+import spacesettlers.objects.weapons.Missile;
 import spacesettlers.simulator.Toroidal2DPhysics;
 import spacesettlers.utilities.Position;
 import spacesettlers.utilities.Movement;
@@ -232,8 +233,22 @@ public class ChaseBot extends TeamClient {
 
 		Random random = new Random();
 		for (AbstractActionableObject actionableObject : actionableObjects){
-			SpaceSettlersPowerupEnum powerup = SpaceSettlersPowerupEnum.values()[random.nextInt(SpaceSettlersPowerupEnum.values().length)];
-			if (actionableObject.isValidPowerup(powerup) && random.nextDouble() < weaponsProbability && shouldShoot){
+			SpaceSettlersPowerupEnum powerup = SpaceSettlersPowerupEnum.FIRE_MISSILE;
+			
+			
+			//Shoot less often when we're moving fast to prevent our bullets from colliding with each other
+			//TODO: Only limit this if we're aiming in the same direction we're traveling
+			double maxAxisSpeed = Math.max(Math.abs(actionableObject.getPosition().getxVelocity()), Math.abs(actionableObject.getPosition().getyVelocity()));
+			int shootingDelay = 2 + (int)((maxAxisSpeed - 15)/15);
+			
+			//If the ship is close to going as fast as a missile, don't shoot
+			if(maxAxisSpeed + 10 > Missile.INITIAL_VELOCITY){
+				shootingDelay = Integer.MAX_VALUE;
+			}
+			
+			boolean bulletsWontCollide = space.getCurrentTimestep() % shootingDelay == 0;
+			
+			if (actionableObject.isValidPowerup(powerup) && shouldShoot && bulletsWontCollide){
 				powerUps.put(actionableObject.getId(), powerup);
 			}
 		}

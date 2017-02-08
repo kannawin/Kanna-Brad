@@ -16,9 +16,10 @@ import spacesettlers.objects.Base;
 import spacesettlers.objects.Ship;
 import spacesettlers.objects.powerups.SpaceSettlersPowerupEnum;
 import spacesettlers.objects.resources.ResourcePile;
+import spacesettlers.objects.weapons.Missile;
 import spacesettlers.simulator.Toroidal2DPhysics;
 import spacesettlers.utilities.Position;
-
+import spacesettlers.utilities.Vector2D;
 import spacesettlers.clients.TeamClient;
 import brad9850.Functions;
 import brad9850.DrawFunctions;
@@ -77,7 +78,8 @@ public class BaseBot extends TeamClient {
 			shouldShoot = true;
 		}
 		
-		newAction = new MoveToObjectAction(space, currentPosition, targetBase);
+		
+		newAction = new MoveToObjectAction(space, currentPosition, targetBase);		
 		return newAction;
 	}
 	
@@ -171,8 +173,22 @@ public class BaseBot extends TeamClient {
 
 		Random random = new Random();
 		for (AbstractActionableObject actionableObject : actionableObjects){
-			SpaceSettlersPowerupEnum powerup = SpaceSettlersPowerupEnum.values()[random.nextInt(SpaceSettlersPowerupEnum.values().length)];
-			if (actionableObject.isValidPowerup(powerup) && shouldShoot){
+			SpaceSettlersPowerupEnum powerup = SpaceSettlersPowerupEnum.FIRE_MISSILE;
+			
+			
+			//Shoot less often when we're moving fast to prevent our bullets from colliding with each other
+			//TODO: Only limit this if we're aiming in the same direction we're traveling
+			double maxAxisSpeed = Math.max(Math.abs(actionableObject.getPosition().getxVelocity()), Math.abs(actionableObject.getPosition().getyVelocity()));
+			int shootingDelay = 2 + (int)((maxAxisSpeed - 15)/15);
+			
+			//If the ship is close to going as fast as a missile, don't shoot
+			if(maxAxisSpeed + 10 > Missile.INITIAL_VELOCITY){
+				shootingDelay = Integer.MAX_VALUE;
+			}
+			
+			boolean bulletsWontCollide = space.getCurrentTimestep() % shootingDelay == 0;
+			
+			if (actionableObject.isValidPowerup(powerup) && shouldShoot && bulletsWontCollide){
 				powerUps.put(actionableObject.getId(), powerup);
 			}
 		}
