@@ -7,6 +7,7 @@ import java.util.Set;
 import spacesettlers.actions.AbstractAction;
 import spacesettlers.actions.MoveAction;
 import spacesettlers.actions.MoveToObjectAction;
+import spacesettlers.actions.RawAction;
 import spacesettlers.objects.AbstractObject;
 import spacesettlers.objects.Asteroid;
 import spacesettlers.objects.Base;
@@ -203,8 +204,10 @@ public class Functions{
 		}
 		//will slow down if within the bounds of the distance, or it won't slow down
 		if(distance < distanceFactor){
-			if(Functions.isAimingAtTarget(space,ship,target) && target.getClass() == Beacon.class)
-				sendOff = new MoveAction(space,ship.getPosition(),target.getPosition(),new Vector2D(ship.getPosition()).fromAngle(direction.getAngle(), Movement.MAX_TRANSLATIONAL_ACCELERATION*3));
+			Vector2D preparingSend = new Vector2D(ship.getPosition()).fromAngle(direction.getAngle(), Movement.MAX_TRANSLATIONAL_ACCELERATION*3);
+			System.out.println(isAimingAtTarget(space,ship,target));
+			if(isAimingAtTarget(space,ship,target))
+				sendOff = new MoveAction(space,ship.getPosition(),target.getPosition(),preparingSend);
 			else
 				sendOff = new MoveToObjectAction(space, ship.getPosition(), target);
 		}
@@ -267,6 +270,46 @@ public class Functions{
 		return gotoTarget;
 	}
 
+	public double angleBetween(Toroidal2DPhysics space, Ship ship, AbstractObject target){
+		Vector2D pos1 = new Vector2D(ship.getPosition());
+		Vector2D pos2 = new Vector2D(target.getPosition());
+		
+		double angle = pos1.angleBetween(pos2);
+		
+		return angle;
+	}
+	
+	/**
+	 * Attempt at a ship brake with turn and burn mechanics
+	 * 
+	 * @param space
+	 * @param ship
+	 * @param target
+	 * @return
+	 */
+	public AbstractAction brake(Toroidal2DPhysics space, Ship ship, AbstractObject target){
+		AbstractAction stop = null;
+		if(!isAimingAtTarget(space,ship,target))
+			if(ship.getPosition().getTranslationalVelocity().getMagnitude() > 10.0){
+				Vector2D currentPath = ship.getPosition().getTranslationalVelocity();
+				stop = new MoveAction(space,ship.getPosition(),ship.getPosition(),currentPath.negate());
+			}
+			else{
+				/*
+				double angles = Movement.MAX_ANGULAR_ACCELERATION*.2;
+				if(space.findShortestDistanceVector(ship.getPosition(), target.getPosition()).getAngle() > Math.PI){
+					stop = new RawAction(0,angles);
+				}
+				else if(space.findShortestDistanceVector(ship.getPosition(), target.getPosition()).getAngle() < Math.PI){
+					stop = new RawAction(0,(angles*-1));
+				}
+				*/
+				
+			}
+		else
+			stop = advancedMovementVector(space,ship,target,10);
+		return stop;
+	}
 	
 	
 	/**
@@ -297,11 +340,11 @@ public class Functions{
 		
 		//Adjust for toroidal math
 		//Ship is facing down & target is above ship, move target down a screen
-		if(shipOrientation > 0 && targetY < shipY){
+		if(shipOrientation > 0.0 && targetY < shipY){
 			targetY += space.getHeight();
 		}
 		//Ship is facing up & target is below ship, move target up a screen
-		if(shipOrientation < 0 && targetY > shipY){
+		if(shipOrientation < 0.0 && targetY > shipY){
 			targetY -= space.getHeight();
 		}
 		//Ship is facing right & target is to the left, move target right a screen
