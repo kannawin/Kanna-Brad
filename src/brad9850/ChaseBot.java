@@ -79,7 +79,7 @@ public class ChaseBot extends TeamClient {
 		Position currentPosition = ship.getPosition();
 		
 		Functions functions = new Functions();
-		
+		//ship.getPosition().setAngularVelocity(Movement.MAX_ANGULAR_ACCELERATION);
 		//nullify from previous action
 		ship.setCurrentAction(null);
 		
@@ -92,15 +92,23 @@ public class ChaseBot extends TeamClient {
 		
 		//dont want to shoot beacons when searching for them
 		shouldShoot = false;
-		if(ship.getEnergy() > 2000){
-			shouldShoot = true;
-			if(traitor != null)
+		if(ship.getEnergy() > 6000){
+
+			if(traitor != null){
+				if(functions.isAimingAtTarget(space, ship, traitor))
+					shouldShoot = true;
 				newAction = functions.advancedMovementVector( space, ship, traitor, 200);
-			else 
+			}
+			else{ 
+				if(functions.isAimingAtTarget(space, ship, nextTarget))
+					shouldShoot = true;
 				newAction = functions.advancedMovementVector(space,ship,nextTarget, 200);	
+			}
 		}
 		else{
-			newAction = functions.advancedMovementVector(space,ship,functions.nearestBeacon(space,ship), 150);
+			ship.getPosition().setAngularVelocity(Movement.MAX_ANGULAR_ACCELERATION);
+			ship.getPosition().setOrientation(functions.angleBetween(space, ship, functions.nearestBeacon(space, ship)));
+			newAction = functions.advancedMovementVector(space, ship, functions.nearestBeacon(space, ship), 150);
 		}
 		return newAction;
 	}
