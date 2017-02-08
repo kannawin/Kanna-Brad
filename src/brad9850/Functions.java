@@ -286,6 +286,8 @@ public class Functions{
 		//	Bottom is positive, also going from Pi (left side) to 0 (right side)
 		//	Units are radians
 		double shipOrientation = ship.getPosition().getOrientation();
+		
+		//Using the distance function here: http://math.stackexchange.com/questions/275529/check-if-line-intersects-with-circles-perimeter
 		double a = Math.tan(shipOrientation);
 		double b = -1;
 		double c = shipY - a * shipX;
@@ -321,7 +323,68 @@ public class Functions{
 		else{
 			return false;
 		}
-	} 
+	}
+	
+	/**
+	 * See if two objects will collide within a certain timespan
+	 */
+	public static boolean willCollide(Toroidal2DPhysics space, 
+									AbstractObject firstObject, Vector2D firstEstimatedSpeed, 
+									AbstractObject secondObject, Vector2D secondEstimatedSpeed,
+									double timespan){
+		
+		
+		
+		return false;
+	}
+	
+	/**
+	 * Get the time during which two objects are occupying the same space on a single axis
+	 * @param firstPosition
+	 * @param firstRadius
+	 * @param firstVelocity
+	 * @param secondPosition
+	 * @param secondRadius
+	 * @param secondVelocity
+	 * @param spaceWidth
+	 * @return
+	 */
+	public static double[] intersectingTimespan(double rightEdgeA, double leftEdgeA, double velocityA, 
+												double rightEdgeB, double leftEdgeB, double velocityB,
+												int spaceWidth){
+		double startOfIntersection = -1, endOfIntersection = -1;
+		
+		//When the two shapes start colliding, this is the edge coming from the left
+		double collisionStartLeftEdge;
+		//When the two shapes start colliding, this is the edge coming from the right
+		double collisionStartRightEdge;
+		//When the two shapes stop colliding, this is the edge coming from the left
+		double collisionEndLeftEdge;
+		//When the two shapes stop colliding, this is the edge coming from the right
+		double collisionEndRightEdge;
+		
+		//If the velocity of A > B (*not the magnitude!*), 
+		//then the collision will always involve A's right side hitting B's left side 
+		if(velocityA > velocityB){
+			collisionStartLeftEdge = rightEdgeA;
+			collisionStartRightEdge = leftEdgeB;
+			
+			collisionEndLeftEdge = leftEdgeA;
+			collisionEndRightEdge = rightEdgeB;
+		}
+		else if(velocityB > velocityA){
+			collisionStartLeftEdge = rightEdgeB;
+			collisionStartRightEdge = leftEdgeA;
+			
+			collisionEndLeftEdge = leftEdgeB;
+			collisionEndRightEdge = rightEdgeA;
+		}
+		
+		double distanceToClose = 0;//TODO
+		
+		double [] timespan = {startOfIntersection, endOfIntersection};
+		return timespan;
+	}
 	
 	
 }
