@@ -1,6 +1,5 @@
 package brad9850;
 
-import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Graphics2D;
 import java.util.ArrayList;
@@ -11,6 +10,11 @@ import spacesettlers.simulator.Toroidal2DPhysics;
 import spacesettlers.utilities.Position;
 import spacesettlers.utilities.Vector2D;
 
+/**
+ * Graphics debugging functions for our agents
+ * @author chris
+ *
+ */
 public class DrawFunctions {
 	private static ArrayList<SpacewarGraphics> graphicsToAdd = new ArrayList<SpacewarGraphics>();
 	
