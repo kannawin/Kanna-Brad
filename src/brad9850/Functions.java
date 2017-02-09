@@ -7,7 +7,7 @@ import java.util.Set;
 import spacesettlers.actions.AbstractAction;
 import spacesettlers.actions.MoveAction;
 import spacesettlers.actions.MoveToObjectAction;
-import spacesettlers.objects.AbstractActionableObject;
+import spacesettlers.actions.RawAction;
 import spacesettlers.objects.AbstractObject;
 import spacesettlers.objects.Asteroid;
 import spacesettlers.objects.Base;
@@ -19,14 +19,12 @@ import spacesettlers.utilities.Movement;
 import spacesettlers.utilities.Position;
 import spacesettlers.utilities.Vector2D;
 
-/**
- * Utility functions for the agents
- *
- */
 public class Functions{
+	
 	
 	/**
 	 * See if a team is a non-AI enemy
+	 * 
 	 * @param teamName The name of the team we are checking
 	 * @param friendlyTeamName The name of our team
 	 */
@@ -55,40 +53,34 @@ public class Functions{
 	 * @param ship
 	 * @return
 	 */
-	public static AbstractActionableObject findNearestEnemyBase(Toroidal2DPhysics space, Ship ship) {
+	public static AbstractObject findNearestEnemyBase(Toroidal2DPhysics space, Ship ship) {
 		double minDistance = Double.MAX_VALUE;
-		AbstractActionableObject nearestBase = null;
+		AbstractObject nearestBase = null;
 		
 		
 		for (Base base : space.getBases()) {
 			if(!base.getTeamName().equalsIgnoreCase(ship.getTeamName())){
-				if (base.isHomeBase() && base.getEnergy() > 500) {
+				//targets supplimentary bases first, why should they get more than one?
+				if(!base.isHomeBase()){
+					double dist = space.findShortestDistance(ship.getPosition(), base.getPosition());
+					if(dist < minDistance) {
+						minDistance = dist;
+						nearestBase = base;
+					}
+				}
+				//only will target home bases if they have energy to kill
+				else if (base.isHomeBase() && base.getHealingEnergy() > 250) {
 					double dist = space.findShortestDistance(ship.getPosition(), base.getPosition());
 					if (dist < minDistance) {
 						minDistance = dist;
 						nearestBase = base;
 					}
 				}
-				//TODO: Fix base searching code-doesn't actually target secondary bases first yet
-//				//targets supplimentary bases first, why should they get more than one?
-//				if(!base.isHomeBase()){
-//					double dist = space.findShortestDistance(ship.getPosition(), base.getPosition());
-//					if(dist < minDistance) {
-//						minDistance = dist;
-//						nearestBase = base;
-//					}
-//				}
-//				//only will target home bases if they have energy to kill
-//				else if (base.isHomeBase() && base.getHealingEnergy() > 250) {
-//					double dist = space.findShortestDistance(ship.getPosition(), base.getPosition());
-//					if (dist < minDistance) {
-//						minDistance = dist;
-//						nearestBase = base;
-//					}
-//				}
+				else{
+					nearestBase = nearestEnemy(space,ship);
+				}
 			}
 		}
-		
 		return nearestBase;
 	}
 	
@@ -142,15 +134,14 @@ public class Functions{
 	 * @param ship
 	 * @return
 	 */
-	public static AbstractActionableObject getEnemyNearBase(Toroidal2DPhysics space, Ship ship){
-		double withinDistance = 150;
+	public static AbstractObject isEnemyNearBase(Toroidal2DPhysics space, Ship ship){
 		for(Ship notUs : space.getShips()){
 			for(Base us : space.getBases()){
 				if(!notUs.getTeamName().equalsIgnoreCase(ship.getTeamName()) && us.getTeamName().equalsIgnoreCase(ship.getTeamName())){
-					if(notUs.getPosition().getX() < (us.getPosition().getX() + withinDistance) && 
-							notUs.getPosition().getX() > (us.getPosition().getX() - withinDistance)){
-						if(notUs.getPosition().getY() < (us.getPosition().getY() + withinDistance) &&
-								notUs.getPosition().getY() > (us.getPosition().getY() - withinDistance)){
+					if(notUs.getPosition().getX() < (us.getPosition().getX() + 150) && 
+							notUs.getPosition().getX() > (us.getPosition().getX() - 150)){
+						if(notUs.getPosition().getY() < (us.getPosition().getY() + 150) &&
+								notUs.getPosition().getY() > (us.getPosition().getY() - 150)){
 							return notUs;
 						}
 					}
@@ -162,27 +153,7 @@ public class Functions{
 	
 	 
 	
-	
-	/**
-	 * Goes to the next location quickly, currently max velocity is at 4*max_accel
-	 * Because it gets out of control, it's toned down to 3*max_accel
-	 * 
-	 * @param space
-	 * @param ship
-	 * @param target
-	 * @return
-	 */
-	public static AbstractAction nextVector(Toroidal2DPhysics space, Ship ship, AbstractObject target){
-		//get the direction it is going
-		Vector2D direction = space.findShortestDistanceVector(ship.getPosition(), target.getPosition());
-		Vector2D gotoPlace = new Vector2D();
-		//use that angle for which it is going to accelerate, and set the magnitude up
-		gotoPlace = gotoPlace.fromAngle(direction.getAngle(),Movement.MAX_TRANSLATIONAL_ACCELERATION*3);
-		//set the ship in motion
-		AbstractAction sendOff = new MoveAction(space ,ship.getPosition(), target.getPosition() , gotoPlace);
-		return sendOff;
-		
-	}
+
 	
 	/**
 	 * Advanced Movement Vector, slows down near the target if it shoot-able else it will get the right angle and finish movement
@@ -196,13 +167,15 @@ public class Functions{
 	 */
 	public static AbstractAction advancedMovementVector(Toroidal2DPhysics space, Ship ship, AbstractObject target, int distanceFactor){
 		Vector2D direction = space.findShortestDistanceVector(ship.getPosition(), target.getPosition());
-		Vector2D gotoPlace = new Vector2D(ship.getPosition());
-		gotoPlace = gotoPlace.fromAngle(gotoPlace.angleBetween(direction),Movement.MAX_TRANSLATIONAL_ACCELERATION*3);
 
+		//speed adjustments relative to max accel
+		double movementFactor = 2.25;
+		double movementMax = Movement.MAX_TRANSLATIONAL_ACCELERATION*movementFactor;
 		
 		AbstractAction sendOff = null;
-		
 		double distance = space.findShortestDistance(ship.getPosition(), target.getPosition());
+		
+		
 		//gets a set of non shootable asteroids
 		Set<AbstractObject> asteroids = new HashSet<AbstractObject>();
 		for(Asteroid obj : space.getAsteroids()){
@@ -210,25 +183,31 @@ public class Functions{
 				asteroids.add(obj);
 			}
 		}
+		
+		
 		//will slow down if within the bounds of the distance, or it won't slow down
 		if(distance < distanceFactor){
-			Vector2D preparingSend = new Vector2D(ship.getPosition()).fromAngle(direction.getAngle(), Movement.MAX_TRANSLATIONAL_ACCELERATION*3);
-			//System.out.println(isAimingAtTarget(space,ship,target));
-			if(isAimingAtTarget(space,ship,target))
-				sendOff = new MoveAction(space,ship.getPosition(),target.getPosition(),preparingSend);
-			else
-				sendOff = new MoveToObjectAction(space, ship.getPosition(), target);
+			double adjustedVelocity = (distance/distanceFactor) * (movementMax / (movementFactor*1.25));
+			
+			if(target.getClass() == Beacon.class &&
+					(Functions.willHitMovingTarget(space,ship,target,target.getPosition().getTranslationalVelocity()) ||
+							ship.getPosition().getTotalTranslationalVelocity() < movementMax*.1)){
+				
+				sendOff = nextVector(space,ship,target, movementMax);
+			}
+			else{
+				//TODO make a quick rotate and rotation compensator action method for this
+				sendOff = nextVector(space,ship,target, adjustedVelocity);
+			}
 		}
 		//if path is clear it will go
-		else if(space.isPathClearOfObstructions(ship.getPosition(), target.getPosition(), asteroids, 0))
-			sendOff = new MoveAction(space,ship.getPosition(),target.getPosition(),gotoPlace);
+		else if(space.isPathClearOfObstructions(ship.getPosition(), target.getPosition(), asteroids, 0)){
+			sendOff = nextVector(space,ship,target,movementMax);
+		}
 		
 		//else it will find a new target
 		else{
-			AbstractObject nextLocation = nextFreeVector(space,ship,target);
-			Vector2D vectorTarget = new Vector2D(ship.getPosition());
-			vectorTarget.fromAngle(vectorTarget.angleBetween(new Vector2D(target.getPosition())), Movement.MAX_TRANSLATIONAL_ACCELERATION*3);
-			sendOff = new MoveAction(space,ship.getPosition(),nextFreeVector(space,ship,target).getPosition(),vectorTarget);
+			sendOff = nextVector(space,ship,nextFreeVector(space,ship,target), movementMax);
 		}
 		
 		
@@ -264,11 +243,15 @@ public class Functions{
 				nonShootable.add(asteroid);
 			}
 		}
+		//adds bases as impassable objects too
+		for(Base bases : space.getBases()){
+			nonShootable.add(bases);
+		}
 		
 		//finds the shortest free path
 		for(AbstractObject obj : targetObjs){
 			double distance = space.findShortestDistance(ship.getPosition(), target.getPosition());
-			if(distance < minDistance && space.isPathClearOfObstructions(ship.getPosition(), obj.getPosition(), nonShootable, 0)){
+			if(distance < minDistance && space.isPathClearOfObstructions(ship.getPosition(), obj.getPosition(), nonShootable, 2)){
 				minDistance = distance;
 				gotoTarget = obj;
 			}
@@ -279,7 +262,8 @@ public class Functions{
 	}
 
 	/**
-	 * Get the angle from a ship to a target
+	 * Gets the angle between two objects
+	 * 
 	 * @param space
 	 * @param ship
 	 * @param target
@@ -292,6 +276,45 @@ public class Functions{
 		double angle = pos1.angleBetween(pos2);
 		
 		return angle;
+	}
+	
+	/**
+	 * The vectoring agent behind the advanced movement method, returns a movement action that will go in the direction you want,
+	 * towards the target, quickly
+	 * 
+	 * @param space
+	 * @param ship
+	 * @param target
+	 * @param velocity
+	 * @return
+	 */
+	public static AbstractAction nextVector(Toroidal2DPhysics space, Ship ship, AbstractObject target, double velocity){
+		//target self if can't resolve a target
+		Vector2D direction = null;
+		if(target == null){
+			target = ship;
+		}
+		else
+			direction = space.findShortestDistanceVector(ship.getPosition(), target.getPosition());
+		
+		
+		Vector2D gotoPlace = new Vector2D();
+		//use that angle for which it is going to accelerate, and set the magnitude up
+		if(target != ship)
+			gotoPlace = gotoPlace.fromAngle(direction.getAngle(),velocity);
+		else
+			gotoPlace = new Vector2D(ship.getPosition());
+		
+		double compensator = ship.getPosition().getOrientation();
+		double compensateTo = angleBetween(space,ship,target);
+		double compensate = compensator - compensateTo + 2*Math.PI;
+		gotoPlace.rotate(compensate);
+		
+		
+		//set the ship in motion
+		AbstractAction sendOff = new MoveAction(space ,ship.getPosition(), target.getPosition() , gotoPlace);
+		return sendOff;
+		
 	}
 	
 	/**
@@ -308,17 +331,21 @@ public class Functions{
 			if(ship.getPosition().getTranslationalVelocity().getMagnitude() > 10.0){
 				Vector2D currentPath = ship.getPosition().getTranslationalVelocity();
 				stop = new MoveAction(space,ship.getPosition(),ship.getPosition(),currentPath.negate());
+				stop = nextVector(space,ship,target, Movement.MAX_TRANSLATIONAL_ACCELERATION*2);
 			}
 			else{
-				/*
+				
 				double angles = Movement.MAX_ANGULAR_ACCELERATION*.2;
 				if(space.findShortestDistanceVector(ship.getPosition(), target.getPosition()).getAngle() > Math.PI){
-					stop = new RawAction(0,angles);
+					//stop = new RawAction(0,1);
+					stop = nextVector(space,ship,target, Movement.MAX_TRANSLATIONAL_ACCELERATION*3);
 				}
 				else if(space.findShortestDistanceVector(ship.getPosition(), target.getPosition()).getAngle() < Math.PI){
-					stop = new RawAction(0,(angles*-1));
+					//stop = new RawAction(0,1);
+					stop = nextVector(space,ship,target, Movement.MAX_TRANSLATIONAL_ACCELERATION*3);
 				}
-				*/
+				
+				RawAction go = new RawAction(0,0);
 				
 			}
 		else
@@ -436,11 +463,11 @@ public class Functions{
 		//Remember, this approach treats objects as squares, not circles, so this lessens the impact of that
 		Vector2D relativeVelocity = firstEstimatedVelocity.add(secondEstimatedVelocity);
 		double vx = relativeVelocity.getXValue(), vy = relativeVelocity.getYValue();
-		double relativeSpeed = vx * vx + vy * vy; //TODO: Should be sqrt'd, but we'll need to spend time to pick a good new pickiness factor. Does explain some things, though.
+		double relativeSpeed = vx * vx + vy * vy;
 		double maxTimeColliding = (firstObjectRadius + secondObjectRadius) / relativeSpeed;
 		
-		double pickinessFactor = .01; //Found by experimentation to work well. The higher this is, the fewer collisions will be found (including both real & fake collisions). 
-		double timeSpentCollidingThreshold = maxTimeColliding / pickinessFactor;
+		double magicNumber = .01; //Found by experimentation to work well 
+		double timeSpentCollidingThreshold = maxTimeColliding / magicNumber;
 		
 		double smallestTimeUntilCollision = Double.MAX_VALUE;
 		for(double[] xPeriod : xCollisions){
