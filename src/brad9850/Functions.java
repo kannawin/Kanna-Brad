@@ -422,7 +422,7 @@ public class Functions{
 		//Remember, this approach treats objects as squares, not circles, so this lessens the impact of that
 		Vector2D relativeVelocity = firstEstimatedVelocity.add(secondEstimatedVelocity);
 		double vx = relativeVelocity.getXValue(), vy = relativeVelocity.getYValue();
-		double relativeSpeed = vx * vx + vy * vy;
+		double relativeSpeed = vx * vx + vy * vy; //TODO: Should be sqrt'd, but we'll need to spend time to pick a good new pickiness factor. Does explain some things, though.
 		double maxTimeColliding = (firstObjectRadius + secondObjectRadius) / relativeSpeed;
 		
 		double pickinessFactor = .01; //Found by experimentation to work well. The higher this is, the fewer collisions will be found (including both real & fake collisions). 
