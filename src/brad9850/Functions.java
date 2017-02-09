@@ -6,7 +6,6 @@ import java.util.Set;
 
 import spacesettlers.actions.AbstractAction;
 import spacesettlers.actions.MoveAction;
-import spacesettlers.actions.MoveToObjectAction;
 import spacesettlers.actions.RawAction;
 import spacesettlers.objects.AbstractActionableObject;
 import spacesettlers.objects.AbstractObject;
@@ -410,7 +409,49 @@ public class Functions{
 	}
 	
 	/**
-	 * See if shooting now will let us hit a moving target
+	 * See if shooting now will let us hit a moving target, considering possible obstructions
+	 * Assumes no change in velocity for any objects, which is probably not true
+	 * @param space
+	 * @param ship
+	 * @param target
+	 * @return
+	 */
+	public static boolean willMakeItToTarget(Toroidal2DPhysics space, Ship ship, AbstractObject target, Vector2D targetEstimatedVelocity){		
+		Missile fakeMissile = new Missile(ship.getPosition(), ship);
+		
+		double timeUntilHitTarget = timeUntilCollision(space, 
+													fakeMissile.getPosition(), fakeMissile.getRadius(), fakeMissile.getPosition().getTranslationalVelocity(),
+													target.getPosition(), target.getRadius(), targetEstimatedVelocity);
+		
+		//If it won't hit the target in the first place
+		if(timeUntilHitTarget < 0){
+			return false;
+		}
+		
+		for(AbstractObject obstruction : space.getAllObjects()){
+			//Don't worry about objects that bullets will move through
+			if(obstruction instanceof Beacon){
+				continue;
+			}
+			//Don't worry about hitting our target
+			if(obstruction.getId() == target.getId()){
+				continue;
+			}
+			
+			double timeUntilCollision = timeUntilCollision(space,
+															fakeMissile.getPosition(), fakeMissile.getRadius(), fakeMissile.getPosition().getTranslationalVelocity(),
+															obstruction.getPosition(), obstruction.getRadius(), obstruction.getPosition().getTranslationalVelocity());
+			
+			if(timeUntilCollision >= 0 && timeUntilCollision < timeUntilHitTarget){
+				return false;
+			}
+		}
+		
+		return true;
+	}
+	
+	/**
+	 * See if shooting now will let us hit a moving target, assuming no obstructions
 	 * @param space
 	 * @param ship
 	 * @param target
@@ -418,17 +459,10 @@ public class Functions{
 	 * @return
 	 */
 	public static boolean willHitMovingTarget(Toroidal2DPhysics space, Ship ship, AbstractObject target, Vector2D targetEstimatedVelocity){
-		//Get info for missile that will be created
-		Position missilePosition = ship.getPosition();
-		//Adapted from AbstractWeapon.shiftFiringWeaponLocation
-		int radiusToShift = ship.getRadius() + Missile.MISSILE_RADIUS * 2;
-		missilePosition.setX(missilePosition.getX() + (radiusToShift * Math.cos(missilePosition.getOrientation())));
-		missilePosition.setY(missilePosition.getY() + (radiusToShift * Math.sin(missilePosition.getOrientation())));
-		Vector2D missileVelocity = new Vector2D(Missile.INITIAL_VELOCITY * Math.cos(missilePosition.getOrientation()), 
-				Missile.INITIAL_VELOCITY * Math.sin(missilePosition.getOrientation()));
+		Missile fakeMissile = new Missile(ship.getPosition(), ship);
 		
 		double timeUntilCollision = timeUntilCollision(space, 
-														missilePosition, Missile.MISSILE_RADIUS, missileVelocity,
+														fakeMissile.getPosition(), Missile.MISSILE_RADIUS, fakeMissile.getPosition().getTranslationalVelocity(),
 														target.getPosition(), target.getRadius(), targetEstimatedVelocity);
 		
 		if(timeUntilCollision >= 0){

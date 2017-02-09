@@ -14,6 +14,7 @@ import spacesettlers.clients.TeamClient;
 import spacesettlers.graphics.SpacewarGraphics;
 import spacesettlers.objects.AbstractActionableObject;
 import spacesettlers.objects.AbstractObject;
+import spacesettlers.objects.Base;
 import spacesettlers.objects.Ship;
 import spacesettlers.objects.powerups.SpaceSettlersPowerupEnum;
 import spacesettlers.objects.resources.ResourcePile;
@@ -64,8 +65,14 @@ public class BalletBot extends TeamClient {
 		AbstractObject target = space.getAsteroids().iterator().next();
 		
 		shouldShoot = false;
-		if(Functions.willHitMovingTarget(space, ship, target, target.getPosition().getTranslationalVelocity())){
-			shouldShoot = true;
+		for(Base base : space.getBases()){
+			if(!base.getTeamName().equals(ship.getTeamName())){
+				if(Functions.isAimingAtTarget(space, ship, base)){
+					if(Functions.willMakeItToTarget(space, ship, base, base.getPosition().getTranslationalVelocity())){
+						shouldShoot = true;
+					}
+				}
+			}
 		}
 		
 		AbstractAction newAction = new RawAction(0,1);
