@@ -79,19 +79,18 @@ public class ModelBot extends TeamClient {
 		shouldShoot = false;
 		if(ship.getEnergy() > 2000){
 			//Hunt down a target
-			if(currentTarget != null){
-				System.out.println(currentTarget.getEnergy());
-			}
 			if(isGoodTarget(space, currentTarget)){
 				//Use better aiming function if the target is going slow enough
 				double speed = currentTarget.getPosition().getTranslationalVelocity().getMagnitude();
 				if(speed < 5){
-					if(Functions.isAimingAtTarget(space, ship, currentTarget)){
+					if(Functions.isAimingAtTarget(space, ship, currentTarget)
+							&& Functions.willMakeItToTarget(space, ship, currentTarget, currentTarget.getPosition().getTranslationalVelocity())){
 						shouldShoot = true;
 					}
 				}
 				else{
-					if(Functions.willHitMovingTarget(space, ship, currentTarget, currentTarget.getPosition().getTranslationalVelocity())){
+					if(Functions.willHitMovingTarget(space, ship, currentTarget, currentTarget.getPosition().getTranslationalVelocity())
+							&& Functions.willMakeItToTarget(space, ship, currentTarget, currentTarget.getPosition().getTranslationalVelocity())){
 						shouldShoot = true;
 					}
 				}
