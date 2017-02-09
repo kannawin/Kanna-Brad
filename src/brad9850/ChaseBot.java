@@ -32,16 +32,14 @@ import brad9850.Functions;
 import spacesettlers.clients.TeamClient;
 
 /**
- * Modification of the aggressive heuristic asteroid collector to a team that only has one ship.  It 
- * tries to collect resources but it also tries to shoot other ships if they are nearby.
- * 
- * @author amy
+* Reflex-based Agent that prioritizes defending its base, destroying other bases, and hunting down
+* ships, in that order
+*
+* @author Christopher Bradford & Scott Kannawin
+*
  */
 public class ChaseBot extends TeamClient {
-	HashMap <UUID, Ship> asteroidToShipMap;
-	HashMap <UUID, Boolean> aimingForBase;
-	UUID asteroidCollectorID;
-	double weaponsProbability = 1;
+
 	boolean shouldShoot = false;
 	boolean boost = false;
 
@@ -84,8 +82,8 @@ public class ChaseBot extends TeamClient {
 		AbstractAction newAction = null;
 		
 		//find the traitor shooting the base, if there is one, else get the next target
-		AbstractObject traitor = Functions.isEnemyNearBase(space,ship);
-		AbstractObject nextTarget = Functions.findNearestEnemyBase(space,ship);
+		AbstractObject traitor = Functions.getEnemyNearBase(space,ship);
+		AbstractObject nextTarget = Functions.nearestEnemyBase(space,ship);
 
 		
 		//dont want to shoot beacons when searching for them
@@ -93,22 +91,17 @@ public class ChaseBot extends TeamClient {
 		if(ship.getEnergy() > 1750){
 
 			if(traitor != null){
-				if(Functions.isAimingAtTarget(space, ship, traitor) || Functions.willHitMovingTarget(space, ship, traitor, traitor.getPosition().getTranslationalVelocity()));
+				if(Functions.isAimingAtTarget(space, ship))
 					shouldShoot = true;
 				newAction = Functions.advancedMovementVector( space, ship, traitor, 200);
 			}
-			else{ 
-				if(Functions.isAimingAtTarget(space, ship, nextTarget) || Functions.willHitMovingTarget(space, ship, nextTarget, nextTarget.getPosition().getTranslationalVelocity()))
-					shouldShoot = true;
-				newAction = Functions.advancedMovementVector(space,ship,nextTarget, 200);	
+			else if( nextTarget != null){
+				shouldShoot = true;
+				newAction = Functions.advancedMovementVector(space,ship,nextTarget, 200);
 			}
 		}
 		else{
-			ship.getPosition().setAngularVelocity(Movement.MAX_ANGULAR_ACCELERATION);
-			ship.getPosition().setOrientation(Functions.angleBetween(space, ship, Functions.nearestBeacon(space, ship)));
-			
 			newAction = Functions.advancedMovementVector(space, ship, Functions.nearestBeacon(space, ship), 270);
-			//newAction = functions.(space, ship, functions.nearestBeacon(space, ship));
 		}
 		return newAction;
 	}
