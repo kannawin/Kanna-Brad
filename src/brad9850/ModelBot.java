@@ -110,6 +110,11 @@ public class ModelBot extends TeamClient {
 		return newAction;
 	}
 	
+	/**
+	 * Find a good target and store its UUID
+	 * @param space
+	 * @param ship
+	 */
 	private void getNextTargetID(Toroidal2DPhysics space, Ship ship){
 		AbstractActionableObject nextTarget = null;
 		//find the traitor shooting the base, if there is one. Otherwise, get the next target
@@ -124,6 +129,12 @@ public class ModelBot extends TeamClient {
 		currentTargetID = nextTarget.getId();
 	}
 	
+	/**
+	 * See if we should still be going after our target
+	 * @param space
+	 * @param target
+	 * @return
+	 */
 	private boolean isGoodTarget(Toroidal2DPhysics space, AbstractActionableObject target){
 		if(target != null && target.isAlive()){
 			//If it's a base with low energy, don't target it anymore
