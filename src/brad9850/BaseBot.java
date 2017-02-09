@@ -32,6 +32,7 @@ import brad9850.DrawFunctions;
  */
 public class BaseBot extends TeamClient {
 	boolean shouldShoot = false;
+	int framesSinceLastShot = 0;
 
 	/**
 	 * Assigns ships to asteroids and beacons, as described above
@@ -160,7 +161,7 @@ public class BaseBot extends TeamClient {
 	}
 
 	/**
-	 * The aggressive asteroid collector shoots if there is an enemy nearby! 
+	 * Shoot whenever we can.
 	 * 
 	 * @param space
 	 * @param actionableObjects
@@ -170,26 +171,27 @@ public class BaseBot extends TeamClient {
 	public Map<UUID, SpaceSettlersPowerupEnum> getPowerups(Toroidal2DPhysics space,
 			Set<AbstractActionableObject> actionableObjects) {
 		HashMap<UUID, SpaceSettlersPowerupEnum> powerUps = new HashMap<UUID, SpaceSettlersPowerupEnum>();
-
-		Random random = new Random();
+		framesSinceLastShot++;
+		
 		for (AbstractActionableObject actionableObject : actionableObjects){
 			SpaceSettlersPowerupEnum powerup = SpaceSettlersPowerupEnum.FIRE_MISSILE;
 			
 			
 			//Shoot less often when we're moving fast to prevent our bullets from colliding with each other
 			//TODO: Only limit this if we're aiming in the same direction we're traveling
-			double maxAxisSpeed = Math.max(Math.abs(actionableObject.getPosition().getxVelocity()), Math.abs(actionableObject.getPosition().getyVelocity()));
-			int shootingDelay = 2 + (int)((maxAxisSpeed - 15)/15);
+			double shipSpeed = actionableObject.getPosition().getTranslationalVelocity().getMagnitude();
+			int shootingDelay = 2 + (int)((shipSpeed - 15)/15);
 			
 			//If the ship is close to going as fast as a missile, don't shoot
-			if(maxAxisSpeed + 10 > Missile.INITIAL_VELOCITY){
+			if(shipSpeed + 10 > Missile.INITIAL_VELOCITY){
 				shootingDelay = Integer.MAX_VALUE;
 			}
 			
-			boolean bulletsWontCollide = space.getCurrentTimestep() % shootingDelay == 0;
+			boolean bulletsWontCollide = framesSinceLastShot >= shootingDelay;
 			
 			if (actionableObject.isValidPowerup(powerup) && shouldShoot && bulletsWontCollide){
 				powerUps.put(actionableObject.getId(), powerup);
+				framesSinceLastShot = 0;
 			}
 		}
 		
