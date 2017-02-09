@@ -72,9 +72,9 @@ public class ChaseBot extends TeamClient {
 		AbstractAction newAction = null;
 		
 		//find the traitor shooting the base, if there is one, else get the next target
-		AbstractObject traitor = Functions.getEnemyNearBase(space, ship);
-		AbstractObject nextTarget = Functions.findNearestEnemyBase(space,ship);
-		AbstractObject nearestEnemy = Functions.nearestEnemy(space, ship);
+		AbstractObject traitor = Combat.getEnemyNearBase(space, ship);
+		AbstractObject nextTarget = Combat.findNearestEnemyBase(space,ship);
+		AbstractObject nearestEnemy = Combat.nearestEnemy(space, ship);
 
 		
 		//Don't want to shoot beacons when searching for them
@@ -82,26 +82,24 @@ public class ChaseBot extends TeamClient {
 		if(ship.getEnergy() > 1750){
 
 			if(traitor != null){
-				if(Functions.isAimingAtTarget(space, ship, traitor))
+				if(Combat.isAimingAtTarget(space, ship, traitor))
 					shouldShoot = true;
-				newAction = Functions.advancedMovementVector( space, ship, traitor, 200);
+				newAction = Vectoring.advancedMovementVector( space, ship, traitor, 200);
 			}
 			else if (nextTarget != null){ 
-				if(Functions.isAimingAtTarget(space, ship, nextTarget))
+				if(Combat.isAimingAtTarget(space, ship, nextTarget))
 					shouldShoot = true;
-				newAction = Functions.advancedMovementVector(space,ship,nextTarget, 200);	
+				newAction = Vectoring.advancedMovementVector(space,ship,nextTarget, 200);	
 			}
 			else if (nearestEnemy != null){
-				if(Functions.willHitMovingTarget(space, ship, nearestEnemy, nearestEnemy.getPosition().getTranslationalVelocity())){
+				if(Combat.willHitMovingTarget(space, ship, nearestEnemy, nearestEnemy.getPosition().getTranslationalVelocity())){
 					shouldShoot = true;
 				}
-				newAction = Functions.advancedMovementVector(space,ship,nearestEnemy, 200);
+				newAction = Vectoring.advancedMovementVector(space,ship,nearestEnemy, 200);
 			}
 		}
 		else{
-			ship.getPosition().setAngularVelocity(Movement.MAX_ANGULAR_ACCELERATION);
-			ship.getPosition().setOrientation(Functions.angleBetween(space, ship, Functions.nearestBeacon(space, ship)));
-			newAction = Functions.advancedMovementVector(space, ship, Functions.nearestBeacon(space, ship), 150);
+			newAction = Vectoring.advancedMovementVector(space, ship, Functions.nearestBeacon(space, ship), 150);
 		}
 		return newAction;
 	}

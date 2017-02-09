@@ -21,7 +21,8 @@ import spacesettlers.simulator.Toroidal2DPhysics;
 import spacesettlers.utilities.Position;
 import spacesettlers.utilities.Vector2D;
 import spacesettlers.clients.TeamClient;
-import brad9850.Functions;
+import brad9850.Vectoring;
+import brad9850.Combat;
 import brad9850.DrawFunctions;
 
 /**
@@ -74,7 +75,7 @@ public class BaseBot extends TeamClient {
 		
 		Base targetBase = findNearestEnemyBase(space, ship);
 		shouldShoot = false;
-		if(Functions.isAimingAtTarget(space, ship, targetBase)){
+		if(Combat.isAimingAtTarget(space, ship, targetBase)){
 			shouldShoot = true;
 		}
 		
@@ -96,7 +97,7 @@ public class BaseBot extends TeamClient {
 		
 		//First, try to find the closest enemy base that belongs to a human team
 		for (Base base : space.getBases()) {
-			if (Functions.isHumanEnemyTeam(base.getTeamName(), ship.getTeamName())) {
+			if (Combat.isHumanEnemyTeam(base.getTeamName(), ship.getTeamName())) {
 				double dist = space.findShortestDistance(ship.getPosition(), base.getPosition());
 				if (dist < minDistance) {
 					minDistance = dist;

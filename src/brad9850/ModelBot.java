@@ -85,16 +85,16 @@ public class ModelBot extends TeamClient {
 				double speed = Math.sqrt(vx * vx + vy * vy);
 				
 				if(speed < 5){
-					if(Functions.isAimingAtTarget(space, ship, currentTarget)){
+					if(Combat.isAimingAtTarget(space, ship, currentTarget)){
 						shouldShoot = true;
 					}
 				}
 				else{
-					if(Functions.willHitMovingTarget(space, ship, currentTarget, currentTarget.getPosition().getTranslationalVelocity())){
+					if(Combat.willHitMovingTarget(space, ship, currentTarget, currentTarget.getPosition().getTranslationalVelocity())){
 						shouldShoot = true;
 					}
 				}
-				newAction = Functions.advancedMovementVector( space, ship, currentTarget, 200);
+				newAction = Vectoring.advancedMovementVector( space, ship, currentTarget, 200);
 			}
 			else{
 				currentTarget = getNextTarget(space, ship);
@@ -103,8 +103,8 @@ public class ModelBot extends TeamClient {
 		else{
 			//Look for a beacon
 			ship.getPosition().setAngularVelocity(Movement.MAX_ANGULAR_ACCELERATION);
-			ship.getPosition().setOrientation(Functions.angleBetween(space, ship, Functions.nearestBeacon(space, ship)));
-			newAction = Functions.advancedMovementVector(space, ship, Functions.nearestBeacon(space, ship), 150);
+			ship.getPosition().setOrientation(Functions.angleBetween(space, ship, Combat.nearestBeacon(space, ship)));
+			newAction = Vectoring.advancedMovementVector(space, ship, Combat.nearestBeacon(space, ship), 150);
 		}
 		return newAction;
 	}
@@ -112,12 +112,12 @@ public class ModelBot extends TeamClient {
 	private AbstractActionableObject getNextTarget(Toroidal2DPhysics space, Ship ship){
 		AbstractActionableObject nextTarget = null;
 		//find the traitor shooting the base, if there is one. Otherwise, get the next target
-		nextTarget = Functions.getEnemyNearBase(space, ship);
+		nextTarget = Combat.getEnemyNearBase(space, ship);
 		if(nextTarget == null){
-			nextTarget = Functions.findNearestEnemyBase(space,ship);
+			nextTarget = Combat.findNearestEnemyBase(space,ship);
 		}
 		if(nextTarget == null){
-			nextTarget = Functions.nearestEnemy(space, ship);
+			nextTarget = Combat.nearestEnemy(space, ship);
 		}
 		
 		return nextTarget;
