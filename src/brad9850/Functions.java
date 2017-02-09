@@ -7,7 +7,6 @@ import java.util.Set;
 import spacesettlers.actions.AbstractAction;
 import spacesettlers.actions.MoveAction;
 import spacesettlers.actions.MoveToObjectAction;
-import spacesettlers.actions.RawAction;
 import spacesettlers.objects.AbstractObject;
 import spacesettlers.objects.Asteroid;
 import spacesettlers.objects.Base;
@@ -19,6 +18,10 @@ import spacesettlers.utilities.Movement;
 import spacesettlers.utilities.Position;
 import spacesettlers.utilities.Vector2D;
 
+/**
+ * Utility functions for the agents
+ *
+ */
 public class Functions{
 	
 	public Functions(){
@@ -62,27 +65,33 @@ public class Functions{
 		
 		for (Base base : space.getBases()) {
 			if(!base.getTeamName().equalsIgnoreCase(ship.getTeamName())){
-				//targets supplimentary bases first, why should they get more than one?
-				if(!base.isHomeBase()){
-					double dist = space.findShortestDistance(ship.getPosition(), base.getPosition());
-					if(dist < minDistance) {
-						minDistance = dist;
-						nearestBase = base;
-					}
-				}
-				//only will target home bases if they have energy to kill
-				else if (base.isHomeBase() && base.getHealingEnergy() > 250) {
+				if (base.isHomeBase() && base.getEnergy() > 500) {
 					double dist = space.findShortestDistance(ship.getPosition(), base.getPosition());
 					if (dist < minDistance) {
 						minDistance = dist;
 						nearestBase = base;
 					}
 				}
-				else{
-					nearestBase = nearestEnemy(space,ship);
-				}
+				//TODO: Fix base searching code-doesn't actually target secondary bases first yet
+//				//targets supplimentary bases first, why should they get more than one?
+//				if(!base.isHomeBase()){
+//					double dist = space.findShortestDistance(ship.getPosition(), base.getPosition());
+//					if(dist < minDistance) {
+//						minDistance = dist;
+//						nearestBase = base;
+//					}
+//				}
+//				//only will target home bases if they have energy to kill
+//				else if (base.isHomeBase() && base.getHealingEnergy() > 250) {
+//					double dist = space.findShortestDistance(ship.getPosition(), base.getPosition());
+//					if (dist < minDistance) {
+//						minDistance = dist;
+//						nearestBase = base;
+//					}
+//				}
 			}
 		}
+		
 		return nearestBase;
 	}
 	
