@@ -205,7 +205,7 @@ public class Functions{
 		//will slow down if within the bounds of the distance, or it won't slow down
 		if(distance < distanceFactor){
 			Vector2D preparingSend = new Vector2D(ship.getPosition()).fromAngle(direction.getAngle(), Movement.MAX_TRANSLATIONAL_ACCELERATION*3);
-			System.out.println(isAimingAtTarget(space,ship,target));
+			//System.out.println(isAimingAtTarget(space,ship,target));
 			if(isAimingAtTarget(space,ship,target))
 				sendOff = new MoveAction(space,ship.getPosition(),target.getPosition(),preparingSend);
 			else
