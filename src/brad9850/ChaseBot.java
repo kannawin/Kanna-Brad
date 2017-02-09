@@ -70,7 +70,7 @@ public class ChaseBot extends TeamClient {
 		AbstractAction newAction = null;
 		
 		//find the traitor shooting the base, if there is one, else get the next target
-		AbstractObject traitor = Functions.isEnemyNearBase(space,ship);
+		AbstractObject traitor = Functions.getEnemyNearBase(space, ship);
 		AbstractObject nextTarget = Functions.findNearestEnemyBase(space,ship);
 		AbstractObject nearestEnemy = Functions.nearestEnemy(space, ship);
 

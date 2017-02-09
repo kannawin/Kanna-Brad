@@ -141,14 +141,15 @@ public class Functions{
 	 * @param ship
 	 * @return
 	 */
-	public static AbstractObject isEnemyNearBase(Toroidal2DPhysics space, Ship ship){
+	public static AbstractObject getEnemyNearBase(Toroidal2DPhysics space, Ship ship){
+		double withinDistance = 150;
 		for(Ship notUs : space.getShips()){
 			for(Base us : space.getBases()){
 				if(!notUs.getTeamName().equalsIgnoreCase(ship.getTeamName()) && us.getTeamName().equalsIgnoreCase(ship.getTeamName())){
-					if(notUs.getPosition().getX() < (us.getPosition().getX() + 150) && 
-							notUs.getPosition().getX() > (us.getPosition().getX() - 150)){
-						if(notUs.getPosition().getY() < (us.getPosition().getY() + 150) &&
-								notUs.getPosition().getY() > (us.getPosition().getY() - 150)){
+					if(notUs.getPosition().getX() < (us.getPosition().getX() + withinDistance) && 
+							notUs.getPosition().getX() > (us.getPosition().getX() - withinDistance)){
+						if(notUs.getPosition().getY() < (us.getPosition().getY() + withinDistance) &&
+								notUs.getPosition().getY() > (us.getPosition().getY() - withinDistance)){
 							return notUs;
 						}
 					}
