@@ -8,6 +8,7 @@ import spacesettlers.actions.AbstractAction;
 import spacesettlers.actions.MoveAction;
 import spacesettlers.actions.MoveToObjectAction;
 import spacesettlers.actions.RawAction;
+import spacesettlers.objects.AbstractActionableObject;
 import spacesettlers.objects.AbstractObject;
 import spacesettlers.objects.Asteroid;
 import spacesettlers.objects.Base;
@@ -53,9 +54,9 @@ public class Functions{
 	 * @param ship
 	 * @return
 	 */
-	public static AbstractObject findNearestEnemyBase(Toroidal2DPhysics space, Ship ship) {
+	public static AbstractActionableObject findNearestEnemyBase(Toroidal2DPhysics space, Ship ship) {
 		double minDistance = Double.MAX_VALUE;
-		AbstractObject nearestBase = null;
+		AbstractActionableObject nearestBase = null;
 		
 		
 		for (Base base : space.getBases()) {
@@ -69,7 +70,7 @@ public class Functions{
 					}
 				}
 				//only will target home bases if they have energy to kill
-				else if (base.isHomeBase() && base.getHealingEnergy() > 250) {
+				else if (base.isHomeBase() && base.getEnergy() > 500) {
 					double dist = space.findShortestDistance(ship.getPosition(), base.getPosition());
 					if (dist < minDistance) {
 						minDistance = dist;
@@ -134,14 +135,15 @@ public class Functions{
 	 * @param ship
 	 * @return
 	 */
-	public static AbstractObject isEnemyNearBase(Toroidal2DPhysics space, Ship ship){
+	public static AbstractActionableObject getEnemyNearBase(Toroidal2DPhysics space, Ship ship){
+		double withinDistance = 150;
 		for(Ship notUs : space.getShips()){
 			for(Base us : space.getBases()){
 				if(!notUs.getTeamName().equalsIgnoreCase(ship.getTeamName()) && us.getTeamName().equalsIgnoreCase(ship.getTeamName())){
-					if(notUs.getPosition().getX() < (us.getPosition().getX() + 150) && 
-							notUs.getPosition().getX() > (us.getPosition().getX() - 150)){
-						if(notUs.getPosition().getY() < (us.getPosition().getY() + 150) &&
-								notUs.getPosition().getY() > (us.getPosition().getY() - 150)){
+					if(notUs.getPosition().getX() < (us.getPosition().getX() + withinDistance) && 
+							notUs.getPosition().getX() > (us.getPosition().getX() - withinDistance)){
+						if(notUs.getPosition().getY() < (us.getPosition().getY() + withinDistance) &&
+								notUs.getPosition().getY() > (us.getPosition().getY() - withinDistance)){
 							return notUs;
 						}
 					}
