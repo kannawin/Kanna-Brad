@@ -1,12 +1,16 @@
 package brad9850;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
 
 import spacesettlers.actions.AbstractAction;
 import spacesettlers.actions.DoNothingAction;
+import spacesettlers.actions.MoveToObjectAction;
 import spacesettlers.actions.PurchaseCosts;
 import spacesettlers.actions.PurchaseTypes;
 import spacesettlers.clients.TeamClient;
@@ -20,11 +24,9 @@ import spacesettlers.objects.weapons.Missile;
 import spacesettlers.simulator.Toroidal2DPhysics;
 import spacesettlers.utilities.Movement;
 import spacesettlers.utilities.Position;
-
 /**
  * Reflex-based Agent that prioritizes defending its base, destroying other bases, and hunting down ships, in that order
  * @author Christopher Bradford & Scot
- * 
  */
 public class ChaseBot extends TeamClient {
 	boolean shouldShoot = false;
@@ -77,7 +79,7 @@ public class ChaseBot extends TeamClient {
 		
 		//Don't want to shoot beacons when searching for them
 		shouldShoot = false;
-		if(ship.getEnergy() > 2000){
+		if(ship.getEnergy() > 1750){
 
 			if(traitor != null){
 				if(Functions.isAimingAtTarget(space, ship, traitor))
@@ -137,6 +139,7 @@ public class ChaseBot extends TeamClient {
 			PurchaseCosts purchaseCosts) {
 
 		HashMap<UUID, PurchaseTypes> purchases = new HashMap<UUID, PurchaseTypes>();
+
 
 		return purchases;
 	}
