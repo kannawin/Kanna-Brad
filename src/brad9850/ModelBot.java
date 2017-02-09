@@ -84,10 +84,7 @@ public class ModelBot extends TeamClient {
 			}
 			if(isGoodTarget(space, currentTarget)){
 				//Use better aiming function if the target is going slow enough
-				double vx = currentTarget.getPosition().getxVelocity();
-				double vy = currentTarget.getPosition().getyVelocity();
-				double speed = Math.sqrt(vx * vx + vy * vy);
-				
+				double speed = currentTarget.getPosition().getTranslationalVelocity().getMagnitude();
 				if(speed < 5){
 					if(Functions.isAimingAtTarget(space, ship, currentTarget)){
 						shouldShoot = true;
@@ -195,9 +192,7 @@ public class ModelBot extends TeamClient {
 			
 			//Shoot less often when we're moving fast to prevent our bullets from colliding with each other
 			//TODO: Only limit this if we're aiming in the same direction we're traveling
-			double vx = actionableObject.getPosition().getxVelocity();
-			double vy = actionableObject.getPosition().getyVelocity();
-			double shipSpeed = Math.sqrt(vx * vx + vy * vy);
+			double shipSpeed = actionableObject.getPosition().getTranslationalVelocity().getMagnitude();
 			int shootingDelay = 2 + (int)((shipSpeed - 15)/15);
 			
 			//If the ship is close to going as fast as a missile, don't shoot
