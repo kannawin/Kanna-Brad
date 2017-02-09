@@ -32,7 +32,7 @@ public class ModelBot extends TeamClient {
 	boolean boost = false;
 	
 	int framesSinceLastShot = 0;
-	AbstractActionableObject currentTarget = null;
+	UUID currentTargetID = null;
 
 	/**
 	 * 
@@ -73,11 +73,15 @@ public class ModelBot extends TeamClient {
 		
 		AbstractAction newAction = null;
 
+		AbstractActionableObject currentTarget = (AbstractActionableObject) space.getObjectById(currentTargetID);
 		
 		//Don't want to shoot beacons when searching for them
 		shouldShoot = false;
 		if(ship.getEnergy() > 2000){
 			//Hunt down a target
+			if(currentTarget != null){
+				System.out.println(currentTarget.getEnergy());
+			}
 			if(isGoodTarget(space, currentTarget)){
 				//Use better aiming function if the target is going slow enough
 				double vx = currentTarget.getPosition().getxVelocity();
@@ -97,7 +101,7 @@ public class ModelBot extends TeamClient {
 				newAction = Functions.advancedMovementVector( space, ship, currentTarget, 200);
 			}
 			else{
-				currentTarget = getNextTarget(space, ship);
+				getNextTargetID(space, ship);
 			}
 		}
 		else{
@@ -109,7 +113,7 @@ public class ModelBot extends TeamClient {
 		return newAction;
 	}
 	
-	private AbstractActionableObject getNextTarget(Toroidal2DPhysics space, Ship ship){
+	private void getNextTargetID(Toroidal2DPhysics space, Ship ship){
 		AbstractActionableObject nextTarget = null;
 		//find the traitor shooting the base, if there is one. Otherwise, get the next target
 		nextTarget = Functions.getEnemyNearBase(space, ship);
@@ -120,13 +124,13 @@ public class ModelBot extends TeamClient {
 			nextTarget = Functions.nearestEnemy(space, ship);
 		}
 		
-		return nextTarget;
+		currentTargetID = nextTarget.getId();
 	}
 	
 	private boolean isGoodTarget(Toroidal2DPhysics space, AbstractActionableObject target){
 		if(target != null && target.isAlive()){
 			//If it's a base with low energy, don't target it anymore
-			if(target.getMaxEnergy() == Base.INITIAL_BASE_ENERGY && target.getEnergy() < 500){
+			if((target instanceof Base) && target.getEnergy() < 500){
 				return false;
 			}
 			//Otherwise, it's a ship or a base with lots of energy, so KILL IT WITH FIRE
