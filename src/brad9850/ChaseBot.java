@@ -92,7 +92,7 @@ public class ChaseBot extends TeamClient {
 		
 		//dont want to shoot beacons when searching for them
 		shouldShoot = false;
-		if(ship.getEnergy() > 6000){
+		if(ship.getEnergy() > 1750){
 
 			if(traitor != null){
 				if(functions.isAimingAtTarget(space, ship, traitor))
