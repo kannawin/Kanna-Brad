@@ -7,6 +7,7 @@ import java.util.Set;
 import spacesettlers.actions.AbstractAction;
 import spacesettlers.actions.MoveAction;
 import spacesettlers.actions.MoveToObjectAction;
+import spacesettlers.objects.AbstractActionableObject;
 import spacesettlers.objects.AbstractObject;
 import spacesettlers.objects.Asteroid;
 import spacesettlers.objects.Base;
@@ -54,9 +55,9 @@ public class Functions{
 	 * @param ship
 	 * @return
 	 */
-	public static AbstractObject findNearestEnemyBase(Toroidal2DPhysics space, Ship ship) {
+	public static AbstractActionableObject findNearestEnemyBase(Toroidal2DPhysics space, Ship ship) {
 		double minDistance = Double.MAX_VALUE;
-		AbstractObject nearestBase = null;
+		AbstractActionableObject nearestBase = null;
 		
 		
 		for (Base base : space.getBases()) {
@@ -141,7 +142,7 @@ public class Functions{
 	 * @param ship
 	 * @return
 	 */
-	public static AbstractObject getEnemyNearBase(Toroidal2DPhysics space, Ship ship){
+	public static AbstractActionableObject getEnemyNearBase(Toroidal2DPhysics space, Ship ship){
 		double withinDistance = 150;
 		for(Ship notUs : space.getShips()){
 			for(Base us : space.getBases()){

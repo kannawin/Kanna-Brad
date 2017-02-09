@@ -35,8 +35,8 @@
 			<configFile>BaseBot-clientinit.xml</configFile>
 		</HighLevelTeamConfig>
 		<HighLevelTeamConfig>
-			<teamName>DumbBaseBot</teamName>
-			<configFile>DumbBaseBot-clientinit.xml</configFile>
+			<teamName>ModelBot</teamName>
+			<configFile>ModelBot-clientinit.xml</configFile>
 		</HighLevelTeamConfig>
 		<HighLevelTeamConfig>
 			<teamName>ChaseBot</teamName>
@@ -63,7 +63,7 @@
 			<teamName>BaseBot</teamName>
 		</BaseConfig>
 		<BaseConfig>
-			<teamName>DumbBaseBot</teamName>
+			<teamName>ModelBot</teamName>
 		</BaseConfig>
 		<BaseConfig>
 			<teamName>ChaseBot</teamName>
