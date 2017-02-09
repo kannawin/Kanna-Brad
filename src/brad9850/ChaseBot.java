@@ -23,7 +23,7 @@ import spacesettlers.utilities.Position;
 
 /**
  * Reflex-based Agent that prioritizes defending its base, destroying other bases, and hunting down ships, in that order
- * @author Christopher Bradford & Scott Kannawin
+ * @author Christopher Bradford & Scot
  * 
  */
 public class ChaseBot extends TeamClient {
@@ -63,7 +63,6 @@ public class ChaseBot extends TeamClient {
 		AbstractAction current = ship.getCurrentAction();
 		Position currentPosition = ship.getPosition();
 		
-		Functions functions = new Functions();
 		//ship.getPosition().setAngularVelocity(Movement.MAX_ANGULAR_ACCELERATION);
 		//nullify from previous action
 		ship.setCurrentAction(null);
@@ -71,9 +70,9 @@ public class ChaseBot extends TeamClient {
 		AbstractAction newAction = null;
 		
 		//find the traitor shooting the base, if there is one, else get the next target
-		AbstractObject traitor = functions.isEnemyNearBase(space,ship);
-		AbstractObject nextTarget = functions.findNearestEnemyBase(space,ship);
-		AbstractObject nearestEnemy = functions.nearestEnemy(space, ship);
+		AbstractObject traitor = Functions.isEnemyNearBase(space,ship);
+		AbstractObject nextTarget = Functions.findNearestEnemyBase(space,ship);
+		AbstractObject nearestEnemy = Functions.nearestEnemy(space, ship);
 
 		
 		//Don't want to shoot beacons when searching for them
@@ -81,26 +80,26 @@ public class ChaseBot extends TeamClient {
 		if(ship.getEnergy() > 2000){
 
 			if(traitor != null){
-				if(functions.isAimingAtTarget(space, ship, traitor))
+				if(Functions.isAimingAtTarget(space, ship, traitor))
 					shouldShoot = true;
-				newAction = functions.advancedMovementVector( space, ship, traitor, 200);
+				newAction = Functions.advancedMovementVector( space, ship, traitor, 200);
 			}
 			else if (nextTarget != null){ 
-				if(functions.isAimingAtTarget(space, ship, nextTarget))
+				if(Functions.isAimingAtTarget(space, ship, nextTarget))
 					shouldShoot = true;
-				newAction = functions.advancedMovementVector(space,ship,nextTarget, 200);	
+				newAction = Functions.advancedMovementVector(space,ship,nextTarget, 200);	
 			}
 			else if (nearestEnemy != null){
-				if(functions.willHitMovingTarget(space, ship, nearestEnemy, nearestEnemy.getPosition().getTranslationalVelocity())){
+				if(Functions.willHitMovingTarget(space, ship, nearestEnemy, nearestEnemy.getPosition().getTranslationalVelocity())){
 					shouldShoot = true;
 				}
-				newAction = functions.advancedMovementVector(space,ship,nearestEnemy, 200);
+				newAction = Functions.advancedMovementVector(space,ship,nearestEnemy, 200);
 			}
 		}
 		else{
 			ship.getPosition().setAngularVelocity(Movement.MAX_ANGULAR_ACCELERATION);
-			ship.getPosition().setOrientation(functions.angleBetween(space, ship, functions.nearestBeacon(space, ship)));
-			newAction = functions.advancedMovementVector(space, ship, functions.nearestBeacon(space, ship), 150);
+			ship.getPosition().setOrientation(Functions.angleBetween(space, ship, Functions.nearestBeacon(space, ship)));
+			newAction = Functions.advancedMovementVector(space, ship, Functions.nearestBeacon(space, ship), 150);
 		}
 		return newAction;
 	}

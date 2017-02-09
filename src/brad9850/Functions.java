@@ -24,10 +24,6 @@ import spacesettlers.utilities.Vector2D;
  */
 public class Functions{
 	
-	public Functions(){
-		
-	}
-	
 	/**
 	 * See if a team is a non-AI enemy
 	 * @param teamName The name of the team we are checking
@@ -58,7 +54,7 @@ public class Functions{
 	 * @param ship
 	 * @return
 	 */
-	public AbstractObject findNearestEnemyBase(Toroidal2DPhysics space, Ship ship) {
+	public static AbstractObject findNearestEnemyBase(Toroidal2DPhysics space, Ship ship) {
 		double minDistance = Double.MAX_VALUE;
 		AbstractObject nearestBase = null;
 		
@@ -103,7 +99,7 @@ public class Functions{
 	 * @return
 	 * 
 	 */
-	public Ship nearestEnemy(Toroidal2DPhysics space, Ship ship){
+	public static Ship nearestEnemy(Toroidal2DPhysics space, Ship ship){
 		double nearest = Double.MAX_VALUE;
 		Ship nearShip = null;
 		for(Ship notUs : space.getShips()){
@@ -125,7 +121,7 @@ public class Functions{
 	 * @param ship
 	 * @return
 	 */
-	public AbstractObject nearestBeacon(Toroidal2DPhysics space, Ship ship){
+	public static AbstractObject nearestBeacon(Toroidal2DPhysics space, Ship ship){
 		double nearest = Double.MAX_VALUE;
 		AbstractObject energy = null;
 		for(Beacon power : space.getBeacons()){
@@ -145,7 +141,7 @@ public class Functions{
 	 * @param ship
 	 * @return
 	 */
-	public AbstractObject isEnemyNearBase(Toroidal2DPhysics space, Ship ship){
+	public static AbstractObject isEnemyNearBase(Toroidal2DPhysics space, Ship ship){
 		for(Ship notUs : space.getShips()){
 			for(Base us : space.getBases()){
 				if(!notUs.getTeamName().equalsIgnoreCase(ship.getTeamName()) && us.getTeamName().equalsIgnoreCase(ship.getTeamName())){
@@ -174,7 +170,7 @@ public class Functions{
 	 * @param target
 	 * @return
 	 */
-	public AbstractAction nextVector(Toroidal2DPhysics space, Ship ship, AbstractObject target){
+	public static AbstractAction nextVector(Toroidal2DPhysics space, Ship ship, AbstractObject target){
 		//get the direction it is going
 		Vector2D direction = space.findShortestDistanceVector(ship.getPosition(), target.getPosition());
 		Vector2D gotoPlace = new Vector2D();
@@ -196,7 +192,7 @@ public class Functions{
 	 * @param distanceFactor
 	 * @return
 	 */
-	public AbstractAction advancedMovementVector(Toroidal2DPhysics space, Ship ship, AbstractObject target, int distanceFactor){
+	public static AbstractAction advancedMovementVector(Toroidal2DPhysics space, Ship ship, AbstractObject target, int distanceFactor){
 		Vector2D direction = space.findShortestDistanceVector(ship.getPosition(), target.getPosition());
 		Vector2D gotoPlace = new Vector2D(ship.getPosition());
 		gotoPlace = gotoPlace.fromAngle(gotoPlace.angleBetween(direction),Movement.MAX_TRANSLATIONAL_ACCELERATION*3);
@@ -245,7 +241,7 @@ public class Functions{
 	 * @param target
 	 * @return
 	 */
-	private AbstractObject nextFreeVector(Toroidal2DPhysics space, Ship ship, AbstractObject target){
+	private static AbstractObject nextFreeVector(Toroidal2DPhysics space, Ship ship, AbstractObject target){
 		Set<AbstractObject> objSet = space.getAllObjects();
 		ArrayList<AbstractObject> targetObjs = new ArrayList<AbstractObject>();
 		
@@ -280,7 +276,14 @@ public class Functions{
 		return gotoTarget;
 	}
 
-	public double angleBetween(Toroidal2DPhysics space, Ship ship, AbstractObject target){
+	/**
+	 * Get the angle from a ship to a target
+	 * @param space
+	 * @param ship
+	 * @param target
+	 * @return
+	 */
+	public static double angleBetween(Toroidal2DPhysics space, Ship ship, AbstractObject target){
 		Vector2D pos1 = new Vector2D(ship.getPosition());
 		Vector2D pos2 = new Vector2D(target.getPosition());
 		
@@ -297,7 +300,7 @@ public class Functions{
 	 * @param target
 	 * @return
 	 */
-	public AbstractAction brake(Toroidal2DPhysics space, Ship ship, AbstractObject target){
+	public static AbstractAction brake(Toroidal2DPhysics space, Ship ship, AbstractObject target){
 		AbstractAction stop = null;
 		if(!isAimingAtTarget(space,ship,target))
 			if(ship.getPosition().getTranslationalVelocity().getMagnitude() > 10.0){
