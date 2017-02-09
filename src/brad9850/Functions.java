@@ -425,8 +425,8 @@ public class Functions{
 		double relativeSpeed = vx * vx + vy * vy;
 		double maxTimeColliding = (firstObjectRadius + secondObjectRadius) / relativeSpeed;
 		
-		double magicNumber = .01; //Found by experimentation to work well 
-		double timeSpentCollidingThreshold = maxTimeColliding / magicNumber;
+		double pickinessFactor = .01; //Found by experimentation to work well. The higher this is, the fewer collisions will be found (including both real & fake collisions). 
+		double timeSpentCollidingThreshold = maxTimeColliding / pickinessFactor;
 		
 		double smallestTimeUntilCollision = Double.MAX_VALUE;
 		for(double[] xPeriod : xCollisions){
