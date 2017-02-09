@@ -21,12 +21,10 @@ import spacesettlers.utilities.Vector2D;
 
 public class Functions{
 	
-	public Functions(){
-		
-	}
 	
 	/**
 	 * See if a team is a non-AI enemy
+	 * 
 	 * @param teamName The name of the team we are checking
 	 * @param friendlyTeamName The name of our team
 	 */
@@ -55,7 +53,7 @@ public class Functions{
 	 * @param ship
 	 * @return
 	 */
-	public AbstractObject findNearestEnemyBase(Toroidal2DPhysics space, Ship ship) {
+	public static AbstractObject findNearestEnemyBase(Toroidal2DPhysics space, Ship ship) {
 		double minDistance = Double.MAX_VALUE;
 		AbstractObject nearestBase = null;
 		
@@ -94,7 +92,7 @@ public class Functions{
 	 * @return
 	 * 
 	 */
-	public Ship nearestEnemy(Toroidal2DPhysics space, Ship ship){
+	public static Ship nearestEnemy(Toroidal2DPhysics space, Ship ship){
 		double nearest = Double.MAX_VALUE;
 		Ship nearShip = null;
 		for(Ship notUs : space.getShips()){
@@ -116,7 +114,7 @@ public class Functions{
 	 * @param ship
 	 * @return
 	 */
-	public AbstractObject nearestBeacon(Toroidal2DPhysics space, Ship ship){
+	public static AbstractObject nearestBeacon(Toroidal2DPhysics space, Ship ship){
 		double nearest = Double.MAX_VALUE;
 		AbstractObject energy = null;
 		for(Beacon power : space.getBeacons()){
@@ -136,7 +134,7 @@ public class Functions{
 	 * @param ship
 	 * @return
 	 */
-	public AbstractObject isEnemyNearBase(Toroidal2DPhysics space, Ship ship){
+	public static AbstractObject isEnemyNearBase(Toroidal2DPhysics space, Ship ship){
 		for(Ship notUs : space.getShips()){
 			for(Base us : space.getBases()){
 				if(!notUs.getTeamName().equalsIgnoreCase(ship.getTeamName()) && us.getTeamName().equalsIgnoreCase(ship.getTeamName())){
@@ -155,27 +153,7 @@ public class Functions{
 	
 	 
 	
-	
-	/**
-	 * Goes to the next location quickly, currently max velocity is at 4*max_accel
-	 * Because it gets out of control, it's toned down to 3*max_accel
-	 * 
-	 * @param space
-	 * @param ship
-	 * @param target
-	 * @return
-	 */
-	public AbstractAction nextVector(Toroidal2DPhysics space, Ship ship, AbstractObject target){
-		//get the direction it is going
-		Vector2D direction = space.findShortestDistanceVector(ship.getPosition(), target.getPosition());
-		Vector2D gotoPlace = new Vector2D();
-		//use that angle for which it is going to accelerate, and set the magnitude up
-		gotoPlace = gotoPlace.fromAngle(direction.getAngle(),Movement.MAX_TRANSLATIONAL_ACCELERATION*3);
-		//set the ship in motion
-		AbstractAction sendOff = new MoveAction(space ,ship.getPosition(), target.getPosition() , gotoPlace);
-		return sendOff;
-		
-	}
+
 	
 	/**
 	 * Advanced Movement Vector, slows down near the target if it shoot-able else it will get the right angle and finish movement
@@ -187,15 +165,17 @@ public class Functions{
 	 * @param distanceFactor
 	 * @return
 	 */
-	public AbstractAction advancedMovementVector(Toroidal2DPhysics space, Ship ship, AbstractObject target, int distanceFactor){
+	public static AbstractAction advancedMovementVector(Toroidal2DPhysics space, Ship ship, AbstractObject target, int distanceFactor){
 		Vector2D direction = space.findShortestDistanceVector(ship.getPosition(), target.getPosition());
-		Vector2D gotoPlace = new Vector2D(ship.getPosition());
-		gotoPlace = gotoPlace.fromAngle(gotoPlace.angleBetween(direction),Movement.MAX_TRANSLATIONAL_ACCELERATION*3);
 
+		//speed adjustments relative to max accel
+		double movementFactor = 2.25;
+		double movementMax = Movement.MAX_TRANSLATIONAL_ACCELERATION*movementFactor;
 		
 		AbstractAction sendOff = null;
-		
 		double distance = space.findShortestDistance(ship.getPosition(), target.getPosition());
+		
+		
 		//gets a set of non shootable asteroids
 		Set<AbstractObject> asteroids = new HashSet<AbstractObject>();
 		for(Asteroid obj : space.getAsteroids()){
@@ -203,25 +183,31 @@ public class Functions{
 				asteroids.add(obj);
 			}
 		}
+		
+		
 		//will slow down if within the bounds of the distance, or it won't slow down
 		if(distance < distanceFactor){
-			Vector2D preparingSend = new Vector2D(ship.getPosition()).fromAngle(direction.getAngle(), Movement.MAX_TRANSLATIONAL_ACCELERATION*3);
-			//System.out.println(isAimingAtTarget(space,ship,target));
-			if(isAimingAtTarget(space,ship,target))
-				sendOff = new MoveAction(space,ship.getPosition(),target.getPosition(),preparingSend);
-			else
-				sendOff = new MoveToObjectAction(space, ship.getPosition(), target);
+			double adjustedVelocity = (distance/distanceFactor) * (movementMax / (movementFactor*1.25));
+			
+			if(target.getClass() == Beacon.class &&
+					(Functions.willHitMovingTarget(space,ship,target,target.getPosition().getTranslationalVelocity()) ||
+							ship.getPosition().getTotalTranslationalVelocity() < movementMax*.1)){
+				
+				sendOff = nextVector(space,ship,target, movementMax);
+			}
+			else{
+				//TODO make a quick rotate and rotation compensator action method for this
+				sendOff = nextVector(space,ship,target, adjustedVelocity);
+			}
 		}
 		//if path is clear it will go
-		else if(space.isPathClearOfObstructions(ship.getPosition(), target.getPosition(), asteroids, 0))
-			sendOff = new MoveAction(space,ship.getPosition(),target.getPosition(),gotoPlace);
+		else if(space.isPathClearOfObstructions(ship.getPosition(), target.getPosition(), asteroids, 0)){
+			sendOff = nextVector(space,ship,target,movementMax);
+		}
 		
 		//else it will find a new target
 		else{
-			AbstractObject nextLocation = nextFreeVector(space,ship,target);
-			Vector2D vectorTarget = new Vector2D(ship.getPosition());
-			vectorTarget.fromAngle(vectorTarget.angleBetween(new Vector2D(target.getPosition())), Movement.MAX_TRANSLATIONAL_ACCELERATION*3);
-			sendOff = new MoveAction(space,ship.getPosition(),nextFreeVector(space,ship,target).getPosition(),vectorTarget);
+			sendOff = nextVector(space,ship,nextFreeVector(space,ship,target), movementMax);
 		}
 		
 		
@@ -236,7 +222,7 @@ public class Functions{
 	 * @param target
 	 * @return
 	 */
-	private AbstractObject nextFreeVector(Toroidal2DPhysics space, Ship ship, AbstractObject target){
+	private static AbstractObject nextFreeVector(Toroidal2DPhysics space, Ship ship, AbstractObject target){
 		Set<AbstractObject> objSet = space.getAllObjects();
 		ArrayList<AbstractObject> targetObjs = new ArrayList<AbstractObject>();
 		
@@ -257,11 +243,15 @@ public class Functions{
 				nonShootable.add(asteroid);
 			}
 		}
+		//adds bases as impassable objects too
+		for(Base bases : space.getBases()){
+			nonShootable.add(bases);
+		}
 		
 		//finds the shortest free path
 		for(AbstractObject obj : targetObjs){
 			double distance = space.findShortestDistance(ship.getPosition(), target.getPosition());
-			if(distance < minDistance && space.isPathClearOfObstructions(ship.getPosition(), obj.getPosition(), nonShootable, 0)){
+			if(distance < minDistance && space.isPathClearOfObstructions(ship.getPosition(), obj.getPosition(), nonShootable, 2)){
 				minDistance = distance;
 				gotoTarget = obj;
 			}
@@ -271,13 +261,60 @@ public class Functions{
 		return gotoTarget;
 	}
 
-	public double angleBetween(Toroidal2DPhysics space, Ship ship, AbstractObject target){
+	/**
+	 * Gets the angle between two objects
+	 * 
+	 * @param space
+	 * @param ship
+	 * @param target
+	 * @return
+	 */
+	public static double angleBetween(Toroidal2DPhysics space, Ship ship, AbstractObject target){
 		Vector2D pos1 = new Vector2D(ship.getPosition());
 		Vector2D pos2 = new Vector2D(target.getPosition());
 		
 		double angle = pos1.angleBetween(pos2);
 		
 		return angle;
+	}
+	
+	/**
+	 * The vectoring agent behind the advanced movement method, returns a movement action that will go in the direction you want,
+	 * towards the target, quickly
+	 * 
+	 * @param space
+	 * @param ship
+	 * @param target
+	 * @param velocity
+	 * @return
+	 */
+	public static AbstractAction nextVector(Toroidal2DPhysics space, Ship ship, AbstractObject target, double velocity){
+		//target self if can't resolve a target
+		Vector2D direction = null;
+		if(target == null){
+			target = ship;
+		}
+		else
+			direction = space.findShortestDistanceVector(ship.getPosition(), target.getPosition());
+		
+		
+		Vector2D gotoPlace = new Vector2D();
+		//use that angle for which it is going to accelerate, and set the magnitude up
+		if(target != ship)
+			gotoPlace = gotoPlace.fromAngle(direction.getAngle(),velocity);
+		else
+			gotoPlace = new Vector2D(ship.getPosition());
+		
+		double compensator = ship.getPosition().getOrientation();
+		double compensateTo = angleBetween(space,ship,target);
+		double compensate = compensator - compensateTo + 2*Math.PI;
+		gotoPlace.rotate(compensate);
+		
+		
+		//set the ship in motion
+		AbstractAction sendOff = new MoveAction(space ,ship.getPosition(), target.getPosition() , gotoPlace);
+		return sendOff;
+		
 	}
 	
 	/**
@@ -288,23 +325,27 @@ public class Functions{
 	 * @param target
 	 * @return
 	 */
-	public AbstractAction brake(Toroidal2DPhysics space, Ship ship, AbstractObject target){
+	public static AbstractAction brake(Toroidal2DPhysics space, Ship ship, AbstractObject target){
 		AbstractAction stop = null;
 		if(!isAimingAtTarget(space,ship,target))
 			if(ship.getPosition().getTranslationalVelocity().getMagnitude() > 10.0){
 				Vector2D currentPath = ship.getPosition().getTranslationalVelocity();
 				stop = new MoveAction(space,ship.getPosition(),ship.getPosition(),currentPath.negate());
+				stop = nextVector(space,ship,target, Movement.MAX_TRANSLATIONAL_ACCELERATION*2);
 			}
 			else{
-				/*
+				
 				double angles = Movement.MAX_ANGULAR_ACCELERATION*.2;
 				if(space.findShortestDistanceVector(ship.getPosition(), target.getPosition()).getAngle() > Math.PI){
-					stop = new RawAction(0,angles);
+					//stop = new RawAction(0,1);
+					stop = nextVector(space,ship,target, Movement.MAX_TRANSLATIONAL_ACCELERATION*3);
 				}
 				else if(space.findShortestDistanceVector(ship.getPosition(), target.getPosition()).getAngle() < Math.PI){
-					stop = new RawAction(0,(angles*-1));
+					//stop = new RawAction(0,1);
+					stop = nextVector(space,ship,target, Movement.MAX_TRANSLATIONAL_ACCELERATION*3);
 				}
-				*/
+				
+				RawAction go = new RawAction(0,0);
 				
 			}
 		else
