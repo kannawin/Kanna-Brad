@@ -219,10 +219,10 @@ public class Combat {
 	 * @return
 	 */
 	public static boolean willMakeItToTarget(Toroidal2DPhysics space, Ship ship, AbstractObject target, Vector2D targetEstimatedVelocity){		
-		Missile fakeMissile = new Missile(ship.getPosition(), ship);
+		Position missilePosition = simulateMissile(ship);
 		
 		double timeUntilHitTarget = timeUntilCollision(space, 
-													fakeMissile.getPosition(), fakeMissile.getRadius(), fakeMissile.getPosition().getTranslationalVelocity(),
+													missilePosition, Missile.MISSILE_RADIUS, missilePosition.getTranslationalVelocity(),
 													target.getPosition(), target.getRadius(), targetEstimatedVelocity);
 		
 		//If it won't hit the target in the first place
@@ -240,8 +240,8 @@ public class Combat {
 				continue;
 			}
 			
-			double timeUntilCollision = timeUntilCollision(space,
-															fakeMissile.getPosition(), fakeMissile.getRadius(), fakeMissile.getPosition().getTranslationalVelocity(),
+			double timeUntilCollision = timeUntilCollision(space, 
+															missilePosition, Missile.MISSILE_RADIUS, missilePosition.getTranslationalVelocity(),
 															obstruction.getPosition(), obstruction.getRadius(), obstruction.getPosition().getTranslationalVelocity());
 			
 			if(timeUntilCollision >= 0 && timeUntilCollision < timeUntilHitTarget){
@@ -261,7 +261,23 @@ public class Combat {
 	 * @return
 	 */
 	public static boolean willHitMovingTarget(Toroidal2DPhysics space, Ship ship, AbstractObject target, Vector2D targetEstimatedVelocity){
+		Position missilePosition = simulateMissile(ship);
 		
+		double timeUntilCollision = timeUntilCollision(space, missilePosition, Missile.MISSILE_RADIUS, missilePosition.getTranslationalVelocity(),
+				target.getPosition(), target.getRadius(), targetEstimatedVelocity);
+
+		if(timeUntilCollision >= 0){
+			return true;
+		}
+		return false;
+	}
+	
+	/**
+	 * See where a missile will spawn if shot this frame, as well as its velocity 
+	 * @param ship
+	 * @return
+	 */
+	private static Position simulateMissile(Ship ship){
 		// Get info for missile that will be created
 		Position missilePosition = ship.getPosition().deepCopy();
 		// Adapted from AbstractWeapon.shiftFiringWeaponLocation
@@ -270,14 +286,9 @@ public class Combat {
 		missilePosition.setY(missilePosition.getY() + (radiusToShift * Math.sin(missilePosition.getOrientation())));
 		Vector2D missileVelocity = new Vector2D(Missile.INITIAL_VELOCITY * Math.cos(missilePosition.getOrientation()),
 				Missile.INITIAL_VELOCITY * Math.sin(missilePosition.getOrientation()));
-
-		double timeUntilCollision = timeUntilCollision(space, missilePosition, Missile.MISSILE_RADIUS, missileVelocity,
-				target.getPosition(), target.getRadius(), targetEstimatedVelocity);
-
-		if(timeUntilCollision >= 0){
-			return true;
-		}
-		return false;
+		
+		missilePosition.setTranslationalVelocity(missileVelocity);
+		return missilePosition;
 	}
 	
 	/**
