@@ -261,12 +261,19 @@ public class Combat {
 	 * @return
 	 */
 	public static boolean willHitMovingTarget(Toroidal2DPhysics space, Ship ship, AbstractObject target, Vector2D targetEstimatedVelocity){
-		Missile fakeMissile = new Missile(ship.getPosition(), ship);
 		
-		double timeUntilCollision = timeUntilCollision(space, 
-														fakeMissile.getPosition(), Missile.MISSILE_RADIUS, fakeMissile.getPosition().getTranslationalVelocity(),
-														target.getPosition(), target.getRadius(), targetEstimatedVelocity);
-		
+		// Get info for missile that will be created
+		Position missilePosition = ship.getPosition().deepCopy();
+		// Adapted from AbstractWeapon.shiftFiringWeaponLocation
+		int radiusToShift = ship.getRadius() + Missile.MISSILE_RADIUS * 2;
+		missilePosition.setX(missilePosition.getX() + (radiusToShift * Math.cos(missilePosition.getOrientation())));
+		missilePosition.setY(missilePosition.getY() + (radiusToShift * Math.sin(missilePosition.getOrientation())));
+		Vector2D missileVelocity = new Vector2D(Missile.INITIAL_VELOCITY * Math.cos(missilePosition.getOrientation()),
+				Missile.INITIAL_VELOCITY * Math.sin(missilePosition.getOrientation()));
+
+		double timeUntilCollision = timeUntilCollision(space, missilePosition, Missile.MISSILE_RADIUS, missileVelocity,
+				target.getPosition(), target.getRadius(), targetEstimatedVelocity);
+
 		if(timeUntilCollision >= 0){
 			return true;
 		}
@@ -328,6 +335,10 @@ public class Combat {
 		
 		return smallestTimeUntilCollision;
 	}
+	
+	public static double round(double num){
+		return ((double)((int)(num*1000)))/1000.0;
+	}
 
 	/**
 	 * See when two objects will collide. 
@@ -368,7 +379,8 @@ public class Combat {
 	private static double[][] intersectingTimespan(double centerA, double radiusA, double velocityA, 
 													double centerB, double radiusB, double velocityB,
 													int spaceWidth){
-		double[][] timespan = {{0, 0},{0,0}};
+		
+		double[][] timespan = {{0.0, 0.0}, {0.0, 0.0}};
 		
 		boolean alreadyCollided = Math.abs(centerA - centerB) < (radiusA + radiusB);
 		
@@ -400,7 +412,7 @@ public class Combat {
 		
 		if(alreadyCollided){
 			//If we've already collided, then timeToStopColliding will be smaller than timeToCollide
-			timespan[0][0] = 0;
+			timespan[0][0] = 0.0;
 			timespan[0][1] = timeToStopColliding;
 			timespan[1][0] = timeToCollide;
 			timespan[1][1] = timeToCollide + ((radiusA + radiusB) / spaceWidth);
@@ -419,7 +431,7 @@ public class Combat {
 		double distance = slowerEdge - fasterEdge;
 		//If the faster one is to the right of the slower one, then it'll wrap through the wall
 		if(fasterEdge > slowerEdge){
-			distance = spaceWidth - distance; 
+			distance = spaceWidth + distance; //Remember, distance is negative in this case
 		}
 		return distance;
 	}
