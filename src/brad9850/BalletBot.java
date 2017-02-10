@@ -2,6 +2,7 @@ package brad9850;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
 
@@ -20,6 +21,7 @@ import spacesettlers.objects.powerups.SpaceSettlersPowerupEnum;
 import spacesettlers.objects.resources.ResourcePile;
 import spacesettlers.objects.weapons.Missile;
 import spacesettlers.simulator.Toroidal2DPhysics;
+import spacesettlers.utilities.Vector2D;
 
 /**
  * Bot that spins in place & shoots when it's told to. Used for testing targeting code.
@@ -75,7 +77,18 @@ public class BalletBot extends TeamClient {
 			}
 		}
 		
-		AbstractAction newAction = new RawAction(0,1);
+		Vector2D shipVelocity = ship.getPosition().getTranslationalVelocity();
+		Vector2D shipAcceleration = new Vector2D(0,0);
+		if(shipVelocity.getMagnitude() == 0){
+			shipAcceleration = Vector2D.getRandom(new Random(), 10);
+		}
+		else if(shipVelocity.getMagnitude() < 70){
+			shipAcceleration = shipVelocity.getUnitVector().multiply(10);
+		}
+		
+		double rotationalAccel = (ship.getPosition().getAngularVelocity() > 3.14) ? 0 : 1;
+		
+		AbstractAction newAction = new RawAction(shipAcceleration, rotationalAccel);
 		return newAction;
 	}	
 
