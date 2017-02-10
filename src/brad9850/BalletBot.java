@@ -63,9 +63,7 @@ public class BalletBot extends TeamClient {
 	 * @param ship
 	 * @return
 	 */
-	private AbstractAction getAction(Toroidal2DPhysics space, Ship ship) {
-		AbstractObject target = space.getAsteroids().iterator().next();
-		
+	private AbstractAction getAction(Toroidal2DPhysics space, Ship ship) {		
 		shouldShoot = false;
 		for(Base base : space.getBases()){
 			if(!base.getTeamName().equals(ship.getTeamName())){
@@ -77,6 +75,7 @@ public class BalletBot extends TeamClient {
 			}
 		}
 		
+		//Basically, keep spinning, and keep our speed at 70 in whatever direction we happen to be going
 		Vector2D shipVelocity = ship.getPosition().getTranslationalVelocity();
 		Vector2D shipAcceleration = new Vector2D(0,0);
 		if(shipVelocity.getMagnitude() == 0){
