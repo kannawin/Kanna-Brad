@@ -35,6 +35,10 @@
 			<configFile>BaseBot-clientinit.xml</configFile>
 		</HighLevelTeamConfig>
 		<HighLevelTeamConfig>
+			<teamName>BalletBot</teamName>
+			<configFile>BalletBot-clientinit.xml</configFile>
+		</HighLevelTeamConfig>
+		<HighLevelTeamConfig>
 			<teamName>ModelBot</teamName>
 			<configFile>ModelBot-clientinit.xml</configFile>
 		</HighLevelTeamConfig>
@@ -61,6 +65,9 @@
 	<bases>
 		<BaseConfig>
 			<teamName>BaseBot</teamName>
+		</BaseConfig>
+		<BaseConfig>
+			<teamName>BalletBot</teamName>
 		</BaseConfig>
 		<BaseConfig>
 			<teamName>ModelBot</teamName>

@@ -32,7 +32,7 @@ public class ModelBot extends TeamClient {
 	boolean boost = false;
 	
 	int framesSinceLastShot = 0;
-	AbstractActionableObject currentTarget = null;
+	UUID currentTargetID = null;
 
 	/**
 	 * 
@@ -73,6 +73,7 @@ public class ModelBot extends TeamClient {
 		
 		AbstractAction newAction = null;
 
+		AbstractActionableObject currentTarget = (AbstractActionableObject) space.getObjectById(currentTargetID);
 		
 		//Don't want to shoot beacons when searching for them
 		shouldShoot = false;
@@ -80,24 +81,23 @@ public class ModelBot extends TeamClient {
 			//Hunt down a target
 			if(isGoodTarget(space, currentTarget)){
 				//Use better aiming function if the target is going slow enough
-				double vx = currentTarget.getPosition().getxVelocity();
-				double vy = currentTarget.getPosition().getyVelocity();
-				double speed = Math.sqrt(vx * vx + vy * vy);
-				
+				double speed = currentTarget.getPosition().getTranslationalVelocity().getMagnitude();
 				if(speed < 5){
-					if(Combat.isAimingAtTarget(space, ship, currentTarget)){
+					if(Combat.isAimingAtTarget(space, ship, currentTarget)
+							&& Functions.willMakeItToTarget(space, ship, currentTarget, currentTarget.getPosition().getTranslationalVelocity())){
 						shouldShoot = true;
 					}
 				}
 				else{
-					if(Combat.willHitMovingTarget(space, ship, currentTarget, currentTarget.getPosition().getTranslationalVelocity())){
+					if(Combat.willHitMovingTarget(space, ship, currentTarget, currentTarget.getPosition().getTranslationalVelocity())
+							&& Functions.willMakeItToTarget(space, ship, currentTarget, currentTarget.getPosition().getTranslationalVelocity())){
 						shouldShoot = true;
 					}
 				}
 				newAction = Vectoring.advancedMovementVector( space, ship, currentTarget, 200);
 			}
 			else{
-				currentTarget = getNextTarget(space, ship);
+				getNextTargetID(space, ship);
 			}
 		}
 		else{
@@ -109,7 +109,12 @@ public class ModelBot extends TeamClient {
 		return newAction;
 	}
 	
-	private AbstractActionableObject getNextTarget(Toroidal2DPhysics space, Ship ship){
+	/**
+	 * Find a good target and store its UUID
+	 * @param space
+	 * @param ship
+	 */
+	private void getNextTargetID(Toroidal2DPhysics space, Ship ship){
 		AbstractActionableObject nextTarget = null;
 		//find the traitor shooting the base, if there is one. Otherwise, get the next target
 		nextTarget = Combat.getEnemyNearBase(space, ship);
@@ -120,13 +125,13 @@ public class ModelBot extends TeamClient {
 			nextTarget = Combat.nearestEnemy(space, ship);
 		}
 		
-		return nextTarget;
+		currentTargetID = nextTarget.getId();
 	}
 	
 	private boolean isGoodTarget(Toroidal2DPhysics space, AbstractActionableObject target){
 		if(target != null && target.isAlive()){
 			//If it's a base with low energy, don't target it anymore
-			if(target.getMaxEnergy() == Base.INITIAL_BASE_ENERGY && target.getEnergy() < 500){
+			if((target instanceof Base) && target.getEnergy() < 500){
 				return false;
 			}
 			//Otherwise, it's a ship or a base with lots of energy, so KILL IT WITH FIRE
@@ -191,9 +196,7 @@ public class ModelBot extends TeamClient {
 			
 			//Shoot less often when we're moving fast to prevent our bullets from colliding with each other
 			//TODO: Only limit this if we're aiming in the same direction we're traveling
-			double vx = actionableObject.getPosition().getxVelocity();
-			double vy = actionableObject.getPosition().getyVelocity();
-			double shipSpeed = Math.sqrt(vx * vx + vy * vy);
+			double shipSpeed = actionableObject.getPosition().getTranslationalVelocity().getMagnitude();
 			int shootingDelay = 2 + (int)((shipSpeed - 15)/15);
 			
 			//If the ship is close to going as fast as a missile, don't shoot

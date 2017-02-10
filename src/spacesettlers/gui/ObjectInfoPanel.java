@@ -20,6 +20,7 @@ import spacesettlers.simulator.SpaceSettlersSimulator;
 public class ObjectInfoPanel extends JPanel {
 	GridBagConstraints constraints;
 	ResourcesPanel resourcesPanel;
+	DebugPanel debugPanel;
 	AbstractObject selectedObject;
 	InnerObjectPanel innerPanel;
 	JLabel objectName;
@@ -89,6 +90,12 @@ public class ObjectInfoPanel extends JPanel {
 		constraints.gridwidth = GridBagConstraints.REMAINDER;
 		add(resourcesPanel, constraints);
 		
+		debugPanel = new DebugPanel();
+		constraints.gridx = 0;
+		constraints.gridy = 4; 
+		constraints.gridwidth = GridBagConstraints.REMAINDER;
+		add(debugPanel, constraints);
+		
 		selectedObject = null;
 	}
 
@@ -130,6 +137,7 @@ public class ObjectInfoPanel extends JPanel {
 		innerPanel.updateData(simulator);
 		
 		resourcesPanel.updateData(selectedObject);
+		debugPanel.updateData(selectedObject);
 	}
 
 	

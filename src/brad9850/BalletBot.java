@@ -1,14 +1,16 @@
 package brad9850;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
 
-import spacesettlers.actions.*;
+import spacesettlers.actions.AbstractAction;
+import spacesettlers.actions.DoNothingAction;
+import spacesettlers.actions.PurchaseCosts;
+import spacesettlers.actions.PurchaseTypes;
+import spacesettlers.actions.RawAction;
+import spacesettlers.clients.TeamClient;
 import spacesettlers.graphics.SpacewarGraphics;
 import spacesettlers.objects.AbstractActionableObject;
 import spacesettlers.objects.AbstractObject;
@@ -18,25 +20,20 @@ import spacesettlers.objects.powerups.SpaceSettlersPowerupEnum;
 import spacesettlers.objects.resources.ResourcePile;
 import spacesettlers.objects.weapons.Missile;
 import spacesettlers.simulator.Toroidal2DPhysics;
-import spacesettlers.utilities.Position;
-import spacesettlers.utilities.Vector2D;
-import spacesettlers.clients.TeamClient;
-import brad9850.Vectoring;
-import brad9850.Combat;
-import brad9850.DrawFunctions;
 
 /**
- * Modification of the aggressive heuristic asteroid collector to a team that only has one ship.  It 
- * tries to collect resources but it also tries to shoot other ships if they are nearby.
+ * Bot that spins in place & shoots when it's told to. Used for testing targeting code.
+ * @author Christopher Bradford
  * 
- * @author amy
  */
-public class BaseBot extends TeamClient {
+public class BalletBot extends TeamClient {
 	boolean shouldShoot = false;
+	boolean boost = false;
+	
 	int framesSinceLastShot = 0;
 
 	/**
-	 * Assigns ships to asteroids and beacons, as described above
+	 * 
 	 */
 	public Map<UUID, AbstractAction> getMovementStart(Toroidal2DPhysics space,
 			Set<AbstractActionableObject> actionableObjects) {
@@ -64,69 +61,26 @@ public class BaseBot extends TeamClient {
 	 * @param ship
 	 * @return
 	 */
-	private AbstractAction getAction(Toroidal2DPhysics space,
-			Ship ship) {
-		DrawFunctions.Refresh();
+	private AbstractAction getAction(Toroidal2DPhysics space, Ship ship) {
+		AbstractObject target = space.getAsteroids().iterator().next();
 		
-		AbstractAction current = ship.getCurrentAction();
-		Position currentPosition = ship.getPosition();
-
-		AbstractAction newAction = null;
-		
-		
-		Base targetBase = findNearestEnemyBase(space, ship);
 		shouldShoot = false;
-		if(Combat.isAimingAtTarget(space, ship, targetBase)){
-			shouldShoot = true;
-		}
-		
-		
-		newAction = new MoveToObjectAction(space, currentPosition, targetBase);		
-		return newAction;
-	}
-	
-	/**
-	 * Find the base for an enemy team nearest to this ship
-	 * 
-	 * @param space
-	 * @param ship
-	 * @return
-	 */
-	private Base findNearestEnemyBase(Toroidal2DPhysics space, Ship ship) {
-		double minDistance = Double.MAX_VALUE;
-		Base nearestBase = null;
-		
-		//First, try to find the closest enemy base that belongs to a human team
-		for (Base base : space.getBases()) {
-			if (Combat.isHumanEnemyTeam(base.getTeamName(), ship.getTeamName())) {
-				double dist = space.findShortestDistance(ship.getPosition(), base.getPosition());
-				if (dist < minDistance) {
-					minDistance = dist;
-					nearestBase = base;
-				}
-			}
-		}
-		
-		//If there is no other human enemy, pick the closest AI base
-		if(nearestBase == null){
-			for (Base base : space.getBases()) {
-				if (!base.getTeamName().equalsIgnoreCase(ship.getTeamName())) {
-					double dist = space.findShortestDistance(ship.getPosition(), base.getPosition());
-					if (dist < minDistance) {
-						minDistance = dist;
-						nearestBase = base;
+		for(Base base : space.getBases()){
+			if(!base.getTeamName().equals(ship.getTeamName())){
+				if(Functions.isAimingAtTarget(space, ship, base)){
+					if(Functions.willMakeItToTarget(space, ship, base, base.getPosition().getTranslationalVelocity())){
+						shouldShoot = true;
 					}
 				}
 			}
 		}
 		
-		return nearestBase;
-	}
-
+		AbstractAction newAction = new RawAction(0,1);
+		return newAction;
+	}	
 
 	@Override
 	public void getMovementEnd(Toroidal2DPhysics space, Set<AbstractActionableObject> actionableObjects) {
-
 	}
 
 	@Override
@@ -141,16 +95,13 @@ public class BaseBot extends TeamClient {
 
 	@Override
 	public Set<SpacewarGraphics> getGraphics() {
-		HashSet<SpacewarGraphics> graphics = new HashSet<SpacewarGraphics>();
-		graphics.addAll(DrawFunctions.GetGraphics());
-		DrawFunctions.Refresh();
-		return graphics;
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 	@Override
 	/**
-	 * If there is enough resourcesAvailable, buy a base.  Place it by finding a ship that is sufficiently
-	 * far away from the existing bases
+	 * Never buy anything
 	 */
 	public Map<UUID, PurchaseTypes> getTeamPurchases(Toroidal2DPhysics space,
 			Set<AbstractActionableObject> actionableObjects, 
@@ -158,6 +109,7 @@ public class BaseBot extends TeamClient {
 			PurchaseCosts purchaseCosts) {
 
 		HashMap<UUID, PurchaseTypes> purchases = new HashMap<UUID, PurchaseTypes>();
+
 		return purchases;
 	}
 

@@ -1,12 +1,22 @@
 package brad9850;
 
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Set;
+
+import spacesettlers.actions.AbstractAction;
+import spacesettlers.actions.MoveAction;
+import spacesettlers.actions.MoveToObjectAction;
+import spacesettlers.actions.RawAction;
 import spacesettlers.objects.AbstractActionableObject;
 import spacesettlers.objects.AbstractObject;
+import spacesettlers.objects.Asteroid;
 import spacesettlers.objects.Base;
 import spacesettlers.objects.Beacon;
 import spacesettlers.objects.Ship;
 import spacesettlers.objects.weapons.Missile;
 import spacesettlers.simulator.Toroidal2DPhysics;
+import spacesettlers.utilities.Movement;
 import spacesettlers.utilities.Position;
 import spacesettlers.utilities.Vector2D;
 
@@ -201,7 +211,49 @@ public class Combat {
 	}
 	
 	/**
-	 * See if shooting now will let us hit a moving target
+	 * See if shooting now will let us hit a moving target, considering possible obstructions
+	 * Assumes no change in velocity for any objects, which is probably not true
+	 * @param space
+	 * @param ship
+	 * @param target
+	 * @return
+	 */
+	public static boolean willMakeItToTarget(Toroidal2DPhysics space, Ship ship, AbstractObject target, Vector2D targetEstimatedVelocity){		
+		Missile fakeMissile = new Missile(ship.getPosition(), ship);
+		
+		double timeUntilHitTarget = timeUntilCollision(space, 
+													fakeMissile.getPosition(), fakeMissile.getRadius(), fakeMissile.getPosition().getTranslationalVelocity(),
+													target.getPosition(), target.getRadius(), targetEstimatedVelocity);
+		
+		//If it won't hit the target in the first place
+		if(timeUntilHitTarget < 0){
+			return false;
+		}
+		
+		for(AbstractObject obstruction : space.getAllObjects()){
+			//Don't worry about objects that bullets will move through
+			if(obstruction instanceof Beacon){
+				continue;
+			}
+			//Don't worry about hitting our target
+			if(obstruction.getId() == target.getId()){
+				continue;
+			}
+			
+			double timeUntilCollision = timeUntilCollision(space,
+															fakeMissile.getPosition(), fakeMissile.getRadius(), fakeMissile.getPosition().getTranslationalVelocity(),
+															obstruction.getPosition(), obstruction.getRadius(), obstruction.getPosition().getTranslationalVelocity());
+			
+			if(timeUntilCollision >= 0 && timeUntilCollision < timeUntilHitTarget){
+				return false;
+			}
+		}
+		
+		return true;
+	}
+	
+	/**
+	 * See if shooting now will let us hit a moving target, assuming no obstructions
 	 * @param space
 	 * @param ship
 	 * @param target
@@ -209,17 +261,10 @@ public class Combat {
 	 * @return
 	 */
 	public static boolean willHitMovingTarget(Toroidal2DPhysics space, Ship ship, AbstractObject target, Vector2D targetEstimatedVelocity){
-		//Get info for missile that will be created
-		Position missilePosition = ship.getPosition();
-		//Adapted from AbstractWeapon.shiftFiringWeaponLocation
-		int radiusToShift = ship.getRadius() + Missile.MISSILE_RADIUS * 2;
-		missilePosition.setX(missilePosition.getX() + (radiusToShift * Math.cos(missilePosition.getOrientation())));
-		missilePosition.setY(missilePosition.getY() + (radiusToShift * Math.sin(missilePosition.getOrientation())));
-		Vector2D missileVelocity = new Vector2D(Missile.INITIAL_VELOCITY * Math.cos(missilePosition.getOrientation()), 
-				Missile.INITIAL_VELOCITY * Math.sin(missilePosition.getOrientation()));
+		Missile fakeMissile = new Missile(ship.getPosition(), ship);
 		
 		double timeUntilCollision = timeUntilCollision(space, 
-														missilePosition, Missile.MISSILE_RADIUS, missileVelocity,
+														fakeMissile.getPosition(), Missile.MISSILE_RADIUS, fakeMissile.getPosition().getTranslationalVelocity(),
 														target.getPosition(), target.getRadius(), targetEstimatedVelocity);
 		
 		if(timeUntilCollision >= 0){
@@ -252,12 +297,11 @@ public class Combat {
 		//It depends on the relative speed of the missile & the size of the target
 		//Remember, this approach treats objects as squares, not circles, so this lessens the impact of that
 		Vector2D relativeVelocity = firstEstimatedVelocity.add(secondEstimatedVelocity);
-		double vx = relativeVelocity.getXValue(), vy = relativeVelocity.getYValue();
-		double relativeSpeed = vx * vx + vy * vy; //TODO: Should be sqrt'd, but we'll need to spend time to pick a good new pickiness factor. Does explain some things, though.
+		double relativeSpeed = relativeVelocity.getMagnitude(); 
 		double maxTimeColliding = (firstObjectRadius + secondObjectRadius) / relativeSpeed;
 		
-		double pickinessFactor = .01; //Found by experimentation to work well. The higher this is, the fewer collisions will be found (including both real & fake collisions). 		 +		double magicNumber = .01; //Found by experimentation to work well 
- 		double timeSpentCollidingThreshold = maxTimeColliding / pickinessFactor;		
+		double pickinessFactor = 1; //Found by experimentation to work well. The higher this is, the fewer collisions will be found (including both real & fake collisions). 
+ 		double timeSpentCollidingThreshold = maxTimeColliding / pickinessFactor;
 
 		double smallestTimeUntilCollision = Double.MAX_VALUE;
 		for(double[] xPeriod : xCollisions){
@@ -309,7 +353,6 @@ public class Combat {
 									secondObject, secondObject.getPosition().getTranslationalVelocity());
 	}
 											
-	
 	
 	/**
 	 * Get the first two periods during which two objects are occupying the same space on a single axis
@@ -381,5 +424,5 @@ public class Combat {
 		return distance;
 	}
 	
-
+	
 }
