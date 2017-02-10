@@ -1,14 +1,17 @@
 package brad9850;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
 
-import spacesettlers.actions.*;
+import spacesettlers.actions.AbstractAction;
+import spacesettlers.actions.DoNothingAction;
+import spacesettlers.actions.MoveToObjectAction;
+import spacesettlers.actions.PurchaseCosts;
+import spacesettlers.actions.PurchaseTypes;
+import spacesettlers.clients.TeamClient;
 import spacesettlers.graphics.SpacewarGraphics;
 import spacesettlers.objects.AbstractActionableObject;
 import spacesettlers.objects.AbstractObject;
@@ -19,11 +22,6 @@ import spacesettlers.objects.resources.ResourcePile;
 import spacesettlers.objects.weapons.Missile;
 import spacesettlers.simulator.Toroidal2DPhysics;
 import spacesettlers.utilities.Position;
-import spacesettlers.utilities.Vector2D;
-import spacesettlers.clients.TeamClient;
-import brad9850.Vectoring;
-import brad9850.Combat;
-import brad9850.DrawFunctions;
 
 /**
  * Modification of the aggressive heuristic asteroid collector to a team that only has one ship.  It 
@@ -34,6 +32,7 @@ import brad9850.DrawFunctions;
 public class BaseBot extends TeamClient {
 	boolean shouldShoot = false;
 	int framesSinceLastShot = 0;
+	UUID currentTarget = null;
 
 	/**
 	 * Assigns ships to asteroids and beacons, as described above
@@ -73,54 +72,50 @@ public class BaseBot extends TeamClient {
 
 		AbstractAction newAction = null;
 		
+		Base targetBase = (Base)space.getObjectById(currentTarget); 
 		
-		Base targetBase = findNearestEnemyBase(space, ship);
-		shouldShoot = false;
-		if(Combat.isAimingAtTarget(space, ship, targetBase)){
-			shouldShoot = true;
+		//If our target is nearly dead, find a new one
+		if(targetBase == null || targetBase.getEnergy() < 400){ //Keep relatively high because there's probably several bullets already on their way
+			double maxEnergy = 0;
+			for(Base base : space.getBases()){
+				if(!base.getTeamName().equalsIgnoreCase(ship.getTeamName())){
+					double baseEnergy = base.getEnergy();
+					if(baseEnergy > maxEnergy){
+						maxEnergy = baseEnergy;
+						targetBase = base;
+						currentTarget = base.getId();
+					}
+				}
+			}
 		}
 		
+		shouldShoot = false;
+		if(Combat.isAimingAtTarget(space, ship, targetBase)){
+			if(Combat.willMakeItToTarget(space, ship, targetBase, targetBase.getPosition().getTranslationalVelocity())){
+				shouldShoot = true;
+			}
+		}		
 		
 		newAction = new MoveToObjectAction(space, currentPosition, targetBase);		
 		return newAction;
 	}
 	
 	/**
-	 * Find the base for an enemy team nearest to this ship
 	 * 
 	 * @param space
-	 * @param ship
+	 * @param target
 	 * @return
 	 */
-	private Base findNearestEnemyBase(Toroidal2DPhysics space, Ship ship) {
-		double minDistance = Double.MAX_VALUE;
-		Base nearestBase = null;
-		
-		//First, try to find the closest enemy base that belongs to a human team
-		for (Base base : space.getBases()) {
-			if (Combat.isHumanEnemyTeam(base.getTeamName(), ship.getTeamName())) {
-				double dist = space.findShortestDistance(ship.getPosition(), base.getPosition());
-				if (dist < minDistance) {
-					minDistance = dist;
-					nearestBase = base;
-				}
+	private boolean isGoodTarget(Toroidal2DPhysics space, AbstractActionableObject target){
+		if(target != null && target.isAlive()){
+			//If it's a base with low energy, don't target it anymore
+			if((target instanceof Base) && target.getEnergy() < 500){
+				return false;
 			}
+			//Otherwise, it's a ship or a base with lots of energy, so KILL IT WITH FIRE
+			return true;
 		}
-		
-		//If there is no other human enemy, pick the closest AI base
-		if(nearestBase == null){
-			for (Base base : space.getBases()) {
-				if (!base.getTeamName().equalsIgnoreCase(ship.getTeamName())) {
-					double dist = space.findShortestDistance(ship.getPosition(), base.getPosition());
-					if (dist < minDistance) {
-						minDistance = dist;
-						nearestBase = base;
-					}
-				}
-			}
-		}
-		
-		return nearestBase;
+		return false;
 	}
 
 
