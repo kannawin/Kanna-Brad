@@ -99,7 +99,7 @@ public class ChaseBot extends TeamClient {
 			}
 		}
 		else{
-			newAction = Vectoring.advancedMovementVector(space, ship, Functions.nearestBeacon(space, ship), 150);
+			newAction = Vectoring.advancedMovementVector(space, ship, Combat.nearestBeacon(space, ship), 150);
 		}
 		return newAction;
 	}

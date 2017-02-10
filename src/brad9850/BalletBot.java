@@ -67,8 +67,8 @@ public class BalletBot extends TeamClient {
 		shouldShoot = false;
 		for(Base base : space.getBases()){
 			if(!base.getTeamName().equals(ship.getTeamName())){
-				if(Functions.isAimingAtTarget(space, ship, base)){
-					if(Functions.willMakeItToTarget(space, ship, base, base.getPosition().getTranslationalVelocity())){
+				if(Combat.isAimingAtTarget(space, ship, base)){
+					if(Combat.willMakeItToTarget(space, ship, base, base.getPosition().getTranslationalVelocity())){
 						shouldShoot = true;
 					}
 				}

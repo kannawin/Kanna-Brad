@@ -84,13 +84,13 @@ public class ModelBot extends TeamClient {
 				double speed = currentTarget.getPosition().getTranslationalVelocity().getMagnitude();
 				if(speed < 5){
 					if(Combat.isAimingAtTarget(space, ship, currentTarget)
-							&& Functions.willMakeItToTarget(space, ship, currentTarget, currentTarget.getPosition().getTranslationalVelocity())){
+							&& Combat.willMakeItToTarget(space, ship, currentTarget, currentTarget.getPosition().getTranslationalVelocity())){
 						shouldShoot = true;
 					}
 				}
 				else{
 					if(Combat.willHitMovingTarget(space, ship, currentTarget, currentTarget.getPosition().getTranslationalVelocity())
-							&& Functions.willMakeItToTarget(space, ship, currentTarget, currentTarget.getPosition().getTranslationalVelocity())){
+							&& Combat.willMakeItToTarget(space, ship, currentTarget, currentTarget.getPosition().getTranslationalVelocity())){
 						shouldShoot = true;
 					}
 				}
@@ -103,7 +103,7 @@ public class ModelBot extends TeamClient {
 		else{
 			//Look for a beacon
 			ship.getPosition().setAngularVelocity(Movement.MAX_ANGULAR_ACCELERATION);
-			ship.getPosition().setOrientation(Functions.angleBetween(space, ship, Combat.nearestBeacon(space, ship)));
+			ship.getPosition().setOrientation(Vectoring.angleBetween(space, ship, Combat.nearestBeacon(space, ship)));
 			newAction = Vectoring.advancedMovementVector(space, ship, Combat.nearestBeacon(space, ship), 150);
 		}
 		return newAction;

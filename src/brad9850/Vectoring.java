@@ -90,7 +90,7 @@ public class Vectoring {
 			double adjustedVelocity = (distance/distanceFactor) * (movementMax / (movementFactor*1.25));
 			
 			if(target.getClass() == Beacon.class &&
-					(Functions.willHitMovingTarget(space,ship,target,target.getPosition().getTranslationalVelocity()) ||
+					(Combat.willHitMovingTarget(space,ship,target,target.getPosition().getTranslationalVelocity()) ||
 							ship.getPosition().getTotalTranslationalVelocity() < movementMax*.1)){
 				
 				sendOff = nextVector(space,ship,target, movementMax);
