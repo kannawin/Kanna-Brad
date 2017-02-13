@@ -38,16 +38,24 @@
 		 each other and the static teams. -->
 	<variableTeams>
 		<HighLevelTeamConfig>
-			<teamName>DoNothingTeam</teamName>
-			<configFile>donothing-clientinit.xml</configFile>
+			<teamName>ModelBot</teamName>
+			<configFile>ModelBot-clientinit.xml</configFile>
 		</HighLevelTeamConfig>
 		<HighLevelTeamConfig>
-			<teamName><b>BaseBot</b></teamName>
+			<teamName>BaseBot</teamName>
 			<configFile>BaseBot-clientinit.xml</configFile>
+		</HighLevelTeamConfig>
+		<HighLevelTeamConfig>
+			<teamName>BalletBot</teamName>
+			<configFile>BalletBot-clientinit.xml</configFile>
 		</HighLevelTeamConfig>
 		<HighLevelTeamConfig>
 			<teamName>ChaseBot</teamName>
 			<configFile>ChaseBot-clientinit.xml</configFile>
+		</HighLevelTeamConfig>
+		<HighLevelTeamConfig>
+			<teamName>DoNothingTeam</teamName>
+			<configFile>donothing-clientinit.xml</configFile>
 		</HighLevelTeamConfig>
 	</variableTeams>
 

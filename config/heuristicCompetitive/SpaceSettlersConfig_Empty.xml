@@ -31,8 +31,8 @@
 		     to the configuration file for that team.  Also, teams can have initial bounding boxes
 		     which bound where the ships and the base will be created. -->
 		<HighLevelTeamConfig>
-			<teamName>BaseBot</teamName>
-			<configFile>BaseBot-clientinit.xml</configFile>
+			<teamName>BalletBot</teamName>
+			<configFile>BalletBot-clientinit.xml</configFile>
 		</HighLevelTeamConfig>
 		<HighLevelTeamConfig>
 			<teamName>DoNothingTeam</teamName>
@@ -43,7 +43,7 @@
 	<!-- Each team needs a base.  Optionally, you can initialize the location of the base -->
 	<bases>
 		<BaseConfig>
-			<teamName>BaseBot</teamName>
+			<teamName>BalletBot</teamName>
 		</BaseConfig>
 		<BaseConfig>
 			<teamName>DoNothingTeam</teamName>
@@ -53,16 +53,16 @@
 	<!-- Specify the options for creating asteroids.  Their locations are random. -->
 	<asteroids>
 		<!-- The probability that a newly spawned asteroid will be mineable -->
-		<probabilityMineable>0.5</probabilityMineable>
+		<probabilityMineable>0</probabilityMineable>
 		
 		<!-- The number of asteroids when the game starts -->
-		<numberInitialAsteroids>0</numberInitialAsteroids>
+		<numberInitialAsteroids>1</numberInitialAsteroids>
 		
 		<!-- The maximum number of asteroids in a game -->
-		<maximumNumberAsteroids>0</maximumNumberAsteroids>
+		<maximumNumberAsteroids>1</maximumNumberAsteroids>
 
 		<!-- The probability an asteroid is movable -->
-		<probabilityMoveable>0.5</probabilityMoveable>
+		<probabilityMoveable>1</probabilityMoveable>
 		
 		<!-- The maximum initial velocity of a move-able asteroid -->
 		<maxInitialVelocity>15</maxInitialVelocity>
