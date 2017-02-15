@@ -14,9 +14,7 @@ public class CustomAction extends AbstractAction{
 	
 	protected double angularAcceleration;
 	protected Vector2D translationalAcceleration;
-	private boolean finished = false;
 	private int timeFinishOffset = 0;
-	private int timeStart;
 	
 	Stack<Double> stack = new Stack<Double>();
 	
@@ -32,17 +30,14 @@ public class CustomAction extends AbstractAction{
 	public CustomAction(Toroidal2DPhysics space, Vector2D translationalAcceleration, double rotationalAcceleration, int offset) {
 		super();
 		this.translationalAcceleration = translationalAcceleration;
-		this.timeStart = space.getCurrentTimestep();
 		this.angularAcceleration = rotationalAcceleration;
 		this.timeFinishOffset = space.getCurrentTimestep() + offset;
-		this.finished = false;
 	}
 	public CustomAction(Vector2D translationalAcceleration, double rotationalAcceleration, Stack<Double> turning) {
 		super();
 		this.translationalAcceleration = translationalAcceleration;
 		this.angularAcceleration = rotationalAcceleration;
 		this.stack = turning;
-		this.finished = false;
 	}
 	
 	public void setStack(Stack<Double> turn){
@@ -64,9 +59,6 @@ public class CustomAction extends AbstractAction{
 		return this.angularAcceleration;
 	}
 	
-	public void setFinished(){
-		this.finished = true;
-	}
 	@Override
 	public boolean isMovementFinished(Toroidal2DPhysics space) {
 		if(space.getCurrentTimestep() >= this.timeFinishOffset){
