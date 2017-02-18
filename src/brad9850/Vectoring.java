@@ -1,8 +1,13 @@
 package brad9850;
 
+import java.awt.List;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.Queue;
 import java.util.Set;
+import java.util.Stack;
+import java.util.UUID;
 
 import spacesettlers.actions.AbstractAction;
 import spacesettlers.actions.MoveAction;
@@ -13,9 +18,203 @@ import spacesettlers.objects.Beacon;
 import spacesettlers.objects.Ship;
 import spacesettlers.simulator.Toroidal2DPhysics;
 import spacesettlers.utilities.Movement;
+import spacesettlers.utilities.Position;
 import spacesettlers.utilities.Vector2D;
 
+/**
+ * Vectoring methods to get around, as well as helpers
+ * @author Scott Kannawin & Christopher Bradford
+ *
+ */
 public class Vectoring {
+	
+	/**
+	 * Movement map for getting around to the target selected using the Floyd-Warshall all pairs shortest path algorithm
+	 * 
+	 * @param space
+	 * @param target
+	 * @param ship
+	 * @return
+	 */
+	
+	public static ArrayList<UUID> movementMap(Toroidal2DPhysics space, AbstractObject target, Ship ship){
+		ArrayList<UUID> movements = new ArrayList<UUID>();
+		ArrayList<UUID> objectOrder = new ArrayList<UUID>();
+		
+		objectOrder.add(ship.getId());
+		for(Beacon energy : space.getBeacons()){
+			objectOrder.add(energy.getId());
+		}
+		Set<Asteroid> mineable = new HashSet<Asteroid>();
+		for(Asteroid mine : space.getAsteroids()){
+			if(mine.isMineable()){
+				mineable.add(mine);
+				objectOrder.add(mine.getId());
+			}
+		}
+		objectOrder.add(target.getId());
+		
+		int sizeOfMap = space.getBeacons().size() + mineable.size() + 2;
+		
+		Integer[][] next = nextLocation(objectOrder,space);
+		Integer[][] dist = distanceToNext(objectOrder,space,next);
+		
+		for(int k = 0; k<sizeOfMap;k++){
+			for(int i=0;i<sizeOfMap;i++){
+				for(int j=0;j<sizeOfMap;j++){
+					if((dist[i][k] + dist[k][j]) < dist[i][j]){
+						dist[i][j] = dist[i][k] + dist[k][j];
+						next[i][j] = next[i][k];
+					}
+				}
+			}
+		}
+		
+		ArrayList<Integer> path = path(0, (sizeOfMap - 1), dist, next);
+		for(int i = 0; i < path.size(); i++){
+			movements.add(objectOrder.get(path.get(i)));
+		}
+		
+		return movements;
+	}
+	
+	public static ArrayList<Integer> path(int a, int b, Integer[][] dist, Integer[][] next){
+		ArrayList<Integer> temp = new ArrayList<Integer>();
+		temp.add(a);
+		while(a != b){
+			a = next[a][b];
+			temp.add(a);
+		}
+		return temp;
+	}
+	
+	/**
+	 * Initializes the distance matrix
+	 * 
+	 * @param order
+	 * @param space
+	 * @param next
+	 * @return
+	 */
+	public static Integer[][] distanceToNext(ArrayList<UUID> order,Toroidal2DPhysics space, Integer[][] next){
+		Integer[][] distance = new Integer[order.size()][order.size()];
+		for(int i = 0; i < order.size(); i++){
+			for(int j = 0; j < order.size(); j++){
+				distance[i][j] = 50000;
+			}
+		}
+		for(int i = 0; i < order.size(); i++){
+			for(int j = 0; j< order.size(); j++){
+				if(next[i][j] != null){
+					//add the edge distance to the heuristic function
+					//heuristic is the distance to the target
+					distance[i][j] =(int) (space.findShortestDistance(space.getObjectById(order.get(i)).getPosition(),
+							space.getObjectById(order.get(j)).getPosition()) + 
+							space.findShortestDistance(space.getObjectById(order.get(j)).getPosition(),
+									space.getObjectById(order.get(order.size() - 1)).getPosition()));
+				}
+			}
+		}
+		
+		return distance;
+	}
+	
+	/**
+	 * Initializes the matrix which defines the next node
+	 * 
+	 * @param order
+	 * @param space
+	 * @return
+	 */
+	public static Integer[][] nextLocation(ArrayList<UUID> order, Toroidal2DPhysics space){
+		Integer[][] next = new Integer[order.size()][order.size()];
+		Set<AbstractObject> obstruction = new HashSet<AbstractObject>();
+		for(Asteroid block : space.getAsteroids()){
+			if(!block.isMineable()){
+				obstruction.add(block);
+			}
+		}
+		for(Base block : space.getBases()){
+			obstruction.add(block);
+		}
+		
+		
+		for(int i = 0; i < order.size(); i++){
+			for(int j = 0; j < order.size(); j++){
+				if(i != j && space.isPathClearOfObstructions(space.getObjectById(order.get(i)).getPosition(),
+						space.getObjectById(order.get(j)).getPosition(),
+						obstruction,
+						space.getObjectById(order.get(0)).getRadius() + 2)){
+					next[i][j] = j;
+				}
+			}
+		}
+		return next;
+	}
+	
+	
+	
+	
+	/**
+	 * Work in progress turning function
+	 * Returns a queue of time steps to move at full angular acceleration to aim at the target
+	 * Currently is the equivalent of a slow moving sprinkler
+	 * 
+	 * @param space
+	 * @param target
+	 * @param ship
+	 * @return
+	 */
+	@SuppressWarnings("static-access")
+	public static Queue<Integer> aimHelp(Toroidal2DPhysics space, AbstractObject target, Ship ship){
+		//use the function for distance covered, solve for t(time steps)
+		//	(1/2)*d = 2*vi*t + a*t^2
+		
+		// 	t = ((-vi) + sqrt(vi^2 - 4ad)) / 2a
+		Queue<Integer> timesteps = new LinkedList<Integer>();
+		
+		double vi = ship.getPosition().getAngularVelocity();
+		double a = 3.5355339059;
+		double angleA = ship.getPosition().getOrientation();
+		
+		Vector2D vectorA = new Vector2D();
+		vectorA.fromAngle(angleA, 1000);
+
+		
+		//double d = space.findShortestDistanceVector(ship.getPosition(), target.getPosition()).angleBetween(vectorA);
+		
+		double compensator = ship.getPosition().getOrientation();
+		double compensateTo = angleBetween(space,ship,target);
+		double d = compensator - compensateTo;
+		
+		//total time steps to get to the position
+		double t = (((-(2*vi)) + Math.sqrt(Math.abs((4*vi*vi) - 4 * a *(.5 * d)))) / 2 * a);
+		t = Math.ceil(t);
+		//System.out.println(vi + "\t" + a + "\t" + d + "\t" + t);
+		
+		double aaa = adjustTurn(t,d);
+		
+		if(t < 38){
+			timesteps.add((int) t);
+			timesteps.add((int) t * -1);
+			timesteps.add(0);
+		}
+		else{
+			timesteps.add((int) t * -1);
+			timesteps.add((int) t);
+			timesteps.add(0);
+		}
+		
+		
+		return timesteps;
+	}
+	
+	public static double adjustTurn(double t, double d){
+		double alphaT = Math.ceil(Math.sqrt(d/3.5355339059));
+		double a = d/(alphaT*alphaT);
+		//System.out.println(a);
+		return a;
+	}
 	
 	/**
 	 * The vectoring agent behind the advanced movement method, returns a movement action that will go in the direction you want,

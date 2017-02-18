@@ -3,7 +3,9 @@ package brad9850;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.Map;
+import java.util.Queue;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
@@ -31,6 +33,8 @@ import spacesettlers.utilities.Position;
 public class ChaseBot extends TeamClient {
 	boolean shouldShoot = false;
 	boolean boost = false;
+	ArrayList<UUID> nextPosition = new ArrayList<UUID>();
+	int lastTimestep = 0;
 
 	/**
 	 * 
@@ -62,41 +66,49 @@ public class ChaseBot extends TeamClient {
 	 * @return
 	 */
 	private AbstractAction getAction(Toroidal2DPhysics space, Ship ship) {
-		AbstractAction current = ship.getCurrentAction();
-		Position currentPosition = ship.getPosition();
-		
 		//ship.getPosition().setAngularVelocity(Movement.MAX_ANGULAR_ACCELERATION);
 		//nullify from previous action
 		ship.setCurrentAction(null);
 		
 		AbstractAction newAction = null;
 		
-		//find the traitor shooting the base, if there is one, else get the next target
-		AbstractObject traitor = Combat.getEnemyNearBase(space, ship);
-		AbstractObject nextTarget = Combat.findNearestEnemyBase(space,ship);
-		AbstractObject nearestEnemy = Combat.nearestEnemy(space, ship);
-
+		//if the next target is dead, it has been 150 timesteps since last refresh, or the list for the path is empty refresh
+		if((nextPosition.size() < 1 || !space.getObjectById(nextPosition.get(nextPosition.size() - 1)).isAlive())
+				|| (space.getCurrentTimestep() - this.lastTimestep) > 150){
+			if(nextPosition.size() > 0){
+				if(!space.getObjectById(nextPosition.get(nextPosition.size() - 1)).isAlive()){
+					this.nextPosition = Vectoring.movementMap(space, Combat.nearestEnemy(space, ship), ship);
+					//get rid of moving to itself first
+					this.nextPosition.remove(0);
+				}
+			}
+			else{
+				this.nextPosition = Vectoring.movementMap(space, Combat.nearestEnemy(space,ship), ship);
+				this.nextPosition.remove(0);
+			}
+		}
+		
 		
 		//Don't want to shoot beacons when searching for them
 		shouldShoot = false;
 		if(ship.getEnergy() > 1750){
-
-			if(traitor != null){
-				if(Combat.isAimingAtTarget(space, ship, traitor))
-					shouldShoot = true;
-				newAction = Vectoring.advancedMovementVector( space, ship, traitor, 200);
-			}
-			else if (nextTarget != null){ 
-				if(Combat.isAimingAtTarget(space, ship, nextTarget))
-					shouldShoot = true;
-				newAction = Vectoring.advancedMovementVector(space,ship,nextTarget, 200);	
-			}
-			else if (nearestEnemy != null){
-				if(Combat.willHitMovingTarget(space, ship, nearestEnemy, nearestEnemy.getPosition().getTranslationalVelocity())){
+			if(space.getObjectById(nextPosition.get(0)).isAlive()){
+				if(Combat.willHitMovingTarget(space, ship, space.getObjectById(nextPosition.get(0)),
+						space.getObjectById(nextPosition.get(0)).getPosition().getTranslationalVelocity())){
 					shouldShoot = true;
 				}
-				newAction = Vectoring.advancedMovementVector(space,ship,nearestEnemy, 200);
+				if(space.findShortestDistance(ship.getPosition(), space.getObjectById(nextPosition.get(0)).getPosition()) < 50){
+					newAction = Vectoring.advancedMovementVector(space, ship, space.getObjectById(nextPosition.get(0)), 150);
+					nextPosition.remove(0);
+				}
+				else{
+					newAction = Vectoring.advancedMovementVector(space, ship, space.getObjectById(nextPosition.get(0)), 150);
+				}
 			}
+			else{
+				this.nextPosition = Vectoring.movementMap(space, Combat.nearestBeacon(space, ship), ship);
+				newAction = Vectoring.advancedMovementVector(space, ship, space.getObjectById(nextPosition.get(0)), 150);
+			}			
 		}
 		else{
 			newAction = Vectoring.advancedMovementVector(space, ship, Combat.nearestBeacon(space, ship), 150);
