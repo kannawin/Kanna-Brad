@@ -70,34 +70,30 @@ public class ChaseBot extends TeamClient {
 		//nullify from previous action
 		ship.setCurrentAction(null);
 		
-		AbstractAction newAction = null;
+		AbstractAction newAction = Vectoring.advancedMovementVector(space, ship, Combat.nearestBeacon(space, ship), 200);
 		
 		//if the next target is dead, it has been 150 timesteps since last refresh, or the list for the path is empty refresh
-		if((nextPosition.size() < 1 || !space.getObjectById(nextPosition.get(nextPosition.size() - 1)).isAlive())
-				|| (space.getCurrentTimestep() - this.lastTimestep) > 150){
-			if(nextPosition.size() > 0){
-				if(!space.getObjectById(nextPosition.get(nextPosition.size() - 1)).isAlive()){
-					this.nextPosition = Vectoring.movementMap(space, Combat.nearestEnemy(space, ship), ship);
-					//get rid of moving to itself first
-					this.nextPosition.remove(0);
-				}
-			}
-			else{
+		if(nextPosition.size() < 1
+				|| (space.getCurrentTimestep() - this.lastTimestep) > 150 
+				|| !space.getObjectById(nextPosition.get(0)).isAlive()
+				|| space.getObjectById(nextPosition.get(0)) == null){
+				this.nextPosition = new ArrayList<UUID>();
+				this.lastTimestep = space.getCurrentTimestep();
 				this.nextPosition = Vectoring.movementMap(space, Combat.nearestEnemy(space,ship), ship);
 				this.nextPosition.remove(0);
-			}
 		}
 		
 		
 		//Don't want to shoot beacons when searching for them
 		shouldShoot = false;
-		if(ship.getEnergy() > 1750){
+		
+		//if(ship.getEnergy() > 1750){
 			if(space.getObjectById(nextPosition.get(0)).isAlive()){
-				if(Combat.willHitMovingTarget(space, ship, space.getObjectById(nextPosition.get(0)),
-						space.getObjectById(nextPosition.get(0)).getPosition().getTranslationalVelocity())){
+				if(Combat.willHitMovingTarget(space, ship, space.getObjectById(nextPosition.get(nextPosition.size() - 1)),
+						space.getObjectById(nextPosition.get(nextPosition.size() - 1)).getPosition().getTranslationalVelocity())){
 					shouldShoot = true;
 				}
-				if(space.findShortestDistance(ship.getPosition(), space.getObjectById(nextPosition.get(0)).getPosition()) < 50){
+				if(space.findShortestDistance(ship.getPosition(), space.getObjectById(nextPosition.get(0)).getPosition()) < 25){
 					newAction = Vectoring.advancedMovementVector(space, ship, space.getObjectById(nextPosition.get(0)), 150);
 					nextPosition.remove(0);
 				}
@@ -106,13 +102,17 @@ public class ChaseBot extends TeamClient {
 				}
 			}
 			else{
+				this.nextPosition = new ArrayList<UUID>();
 				this.nextPosition = Vectoring.movementMap(space, Combat.nearestBeacon(space, ship), ship);
+				this.nextPosition.remove(0);
 				newAction = Vectoring.advancedMovementVector(space, ship, space.getObjectById(nextPosition.get(0)), 150);
-			}			
+			}
+			/*
 		}
 		else{
 			newAction = Vectoring.advancedMovementVector(space, ship, Combat.nearestBeacon(space, ship), 150);
 		}
+		*/
 		return newAction;
 	}
 	
