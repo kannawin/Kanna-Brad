@@ -1,4 +1,5 @@
 package brad9850;
+package kann0200;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -28,7 +29,12 @@ import spacesettlers.simulator.Toroidal2DPhysics;
 import spacesettlers.utilities.Movement;
 import spacesettlers.utilities.Position;
 /**
- * Reflex-based Agent that prioritizes defending its base, destroying other bases, and hunting down ships, in that order
+ * A* based Agent that only hunts down the nearest enemy
+ * It traverses using distance between nodes (mineable asteroids, and beacons)
+ * The heuristic function is direct distance to the target
+ * It gets a path by seeing if between asteroid is a non mineable asteroid and deletes that edge
+ * It gets the shortest path using the Floyd-Warshall all pairs shortest path algorithm
+ * 
  * @author Christopher Bradford & Scott Kannawin
  */
 public class ChaseBot extends TeamClient {
