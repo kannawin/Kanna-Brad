@@ -12,6 +12,7 @@ import java.util.UUID;
 
 import spacesettlers.actions.AbstractAction;
 import spacesettlers.actions.DoNothingAction;
+import spacesettlers.actions.MoveAction;
 import spacesettlers.actions.MoveToObjectAction;
 import spacesettlers.actions.PurchaseCosts;
 import spacesettlers.actions.PurchaseTypes;
@@ -35,6 +36,7 @@ public class ChaseBot extends TeamClient {
 	boolean boost = false;
 	ArrayList<UUID> nextPosition = new ArrayList<UUID>();
 	int lastTimestep = 0;
+	UUID currentTarget = null;
 
 	/**
 	 * 
@@ -70,43 +72,61 @@ public class ChaseBot extends TeamClient {
 		//nullify from previous action
 		ship.setCurrentAction(null);
 		
-		AbstractAction newAction = Vectoring.advancedMovementVector(space, ship, Combat.nearestBeacon(space, ship), 200);
+		AbstractAction newAction = new DoNothingAction();
 		
 		//if the next target is dead, it has been 150 timesteps since last refresh, or the list for the path is empty refresh
 		if(nextPosition.size() < 1
-				|| (space.getCurrentTimestep() - this.lastTimestep) > 150 
-				|| !space.getObjectById(nextPosition.get(0)).isAlive()
-				|| space.getObjectById(nextPosition.get(0)) == null){
+				|| (space.getCurrentTimestep() - this.lastTimestep) > 15 
+				|| space.getObjectById(this.currentTarget) == null
+				|| !space.getObjectById(this.currentTarget).isAlive())
+		{	
 				this.nextPosition = new ArrayList<UUID>();
 				this.lastTimestep = space.getCurrentTimestep();
 				this.nextPosition = Vectoring.movementMap(space, Combat.nearestEnemy(space,ship), ship);
 				this.nextPosition.remove(0);
+				this.currentTarget = space.getObjectById(this.nextPosition.get(this.nextPosition.size() - 1)).getId();
 		}
 		
 		
-		//Don't want to shoot beacons when searching for them
-		shouldShoot = false;
+		if(Combat.willHitMovingTarget(space, ship, space.getObjectById(this.currentTarget), space.getObjectById(this.currentTarget).getPosition().getTranslationalVelocity())){
+			shouldShoot= true;
+		}
+		else{
+			shouldShoot = false;
+		}
 		
 		//if(ship.getEnergy() > 1750){
-			if(space.getObjectById(nextPosition.get(0)).isAlive()){
-				if(Combat.willHitMovingTarget(space, ship, space.getObjectById(nextPosition.get(nextPosition.size() - 1)),
-						space.getObjectById(nextPosition.get(nextPosition.size() - 1)).getPosition().getTranslationalVelocity())){
-					shouldShoot = true;
-				}
-				if(space.findShortestDistance(ship.getPosition(), space.getObjectById(nextPosition.get(0)).getPosition()) < 25){
-					newAction = Vectoring.advancedMovementVector(space, ship, space.getObjectById(nextPosition.get(0)), 150);
+		if(space.getObjectById(this.currentTarget).isAlive()){
+
+			
+			//TODO fix the logic here, should be if it is within a certain distance of the next target move to next item
+			//else if target is still alive be on it
+			//account for if an item is null or not (picked up / destroyed)
+			if(!space.getObjectById(this.currentTarget).isAlive() || space.getObjectById(this.nextPosition.get(0)) == null)
+			{
+				if(nextPosition.size() > 1){
 					nextPosition.remove(0);
+					//newAction = new MoveToObjectAction(space, ship.getPosition(), space.getObjectById(nextPosition.get(0)));
+					newAction = Vectoring.advancedMovementVector(space, ship, space.getObjectById(nextPosition.get(0)), 150);
 				}
 				else{
+					this.nextPosition = new ArrayList<UUID>();
+					this.nextPosition = Vectoring.movementMap(space, Combat.nearestEnemy(space, ship), ship);
+					this.nextPosition.remove(0);
 					newAction = Vectoring.advancedMovementVector(space, ship, space.getObjectById(nextPosition.get(0)), 150);
 				}
 			}
 			else{
-				this.nextPosition = new ArrayList<UUID>();
-				this.nextPosition = Vectoring.movementMap(space, Combat.nearestBeacon(space, ship), ship);
-				this.nextPosition.remove(0);
+				//newAction = new MoveToObjectAction(space, ship.getPosition(), space.getObjectById(nextPosition.get(0)));
 				newAction = Vectoring.advancedMovementVector(space, ship, space.getObjectById(nextPosition.get(0)), 150);
 			}
+		}
+		else{
+			this.nextPosition = new ArrayList<UUID>();
+			this.nextPosition = Vectoring.movementMap(space, Combat.nearestEnemy(space, ship), ship);
+			this.nextPosition.remove(0);
+			newAction = Vectoring.advancedMovementVector(space, ship, space.getObjectById(nextPosition.get(0)), 150);
+		}
 			/*
 		}
 		else{

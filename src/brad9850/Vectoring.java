@@ -36,7 +36,6 @@ public class Vectoring {
 	 * @param ship
 	 * @return
 	 */
-	
 	public static ArrayList<UUID> movementMap(Toroidal2DPhysics space, AbstractObject target, Ship ship){
 		ArrayList<UUID> movements = new ArrayList<UUID>();
 		ArrayList<UUID> objectOrder = new ArrayList<UUID>();
@@ -45,19 +44,17 @@ public class Vectoring {
 		for(Beacon energy : space.getBeacons()){
 			objectOrder.add(energy.getId());
 		}
-		Set<Asteroid> mineable = new HashSet<Asteroid>();
 		for(Asteroid mine : space.getAsteroids()){
 			if(mine.isMineable()){
-				mineable.add(mine);
 				objectOrder.add(mine.getId());
 			}
 		}
 		objectOrder.add(target.getId());
 		
-		int sizeOfMap = space.getBeacons().size() + mineable.size() + 2;
+		int sizeOfMap = objectOrder.size();
 		
-		Integer[][] next = nextLocation(objectOrder,space);
-		Integer[][] dist = distanceToNext(objectOrder,space,next);
+		int[][] next = nextLocation(objectOrder,space);
+		int[][] dist = distanceToNext(objectOrder,space,next);
 		
 		for(int k = 0; k<sizeOfMap;k++){
 			for(int i=0;i<sizeOfMap;i++){
@@ -70,21 +67,27 @@ public class Vectoring {
 			}
 		}
 		
-		ArrayList<Integer> path = path(0, (sizeOfMap - 1), dist, next);
-		for(int i = 0; i < path.size(); i++){
-			movements.add(objectOrder.get(path.get(i)));
+		ArrayList<Integer> path = path(0, (sizeOfMap - 1), next);
+		if(path.size() > 0 && objectOrder.size() > 0){
+			for(int i = 0; i < path.size(); i++){
+				movements.add(objectOrder.get(path.get(i)));
+			}
+		}
+		else{
+			movements.add(ship.getId());
 		}
 		
 		return movements;
 	}
 	
-	public static ArrayList<Integer> path(int a, int b, Integer[][] dist, Integer[][] next){
+	public static ArrayList<Integer> path(int a, int b, int[][] next){
 		ArrayList<Integer> temp = new ArrayList<Integer>();
 		temp.add(a);
-		while(a != b){
+		while(a != b && next != null && b != -1 && a != -1){
 			a = next[a][b];
 			temp.add(a);
 		}
+		
 		return temp;
 	}
 	
@@ -96,22 +99,24 @@ public class Vectoring {
 	 * @param next
 	 * @return
 	 */
-	public static Integer[][] distanceToNext(ArrayList<UUID> order,Toroidal2DPhysics space, Integer[][] next){
-		Integer[][] distance = new Integer[order.size()][order.size()];
-		for(int i = 0; i < order.size(); i++){
-			for(int j = 0; j < order.size(); j++){
-				distance[i][j] = 50000;
+	public static int[][] distanceToNext(ArrayList<UUID> order,Toroidal2DPhysics space, int[][] next){
+		int[][] distance = new int[next.length][next.length];
+		for(int i = 0; i < next.length; i++){
+			for(int j = 0; j < next.length; j++){
+				distance[i][j] = 10000;
 			}
 		}
 		for(int i = 0; i < order.size(); i++){
 			for(int j = 0; j< order.size(); j++){
-				if(next[i][j] != null){
+				if(next[i][j] != -1){
 					//add the edge distance to the heuristic function
 					//heuristic is the distance to the target
-					distance[i][j] =(int) (space.findShortestDistance(space.getObjectById(order.get(i)).getPosition(),
+					int tempDist = (int) (space.findShortestDistance(space.getObjectById(order.get(i)).getPosition(),
 							space.getObjectById(order.get(j)).getPosition()) + 
 							space.findShortestDistance(space.getObjectById(order.get(j)).getPosition(),
 									space.getObjectById(order.get(order.size() - 1)).getPosition()));
+					if((tempDist/2) <= space.findShortestDistance(space.getObjectById(order.get(i)).getPosition(), space.getObjectById(order.get(j)).getPosition()))
+						distance[i][j] = tempDist;
 				}
 			}
 		}
@@ -126,8 +131,14 @@ public class Vectoring {
 	 * @param space
 	 * @return
 	 */
-	public static Integer[][] nextLocation(ArrayList<UUID> order, Toroidal2DPhysics space){
-		Integer[][] next = new Integer[order.size()][order.size()];
+	public static int[][] nextLocation(ArrayList<UUID> order, Toroidal2DPhysics space){
+		int[][] next = new int[order.size()][order.size()];
+		for(int i = 0; i < order.size(); i++){
+			for(int j = 0; j < order.size(); j++){
+				next[i][j] = -1;
+			}
+		}
+		
 		Set<AbstractObject> obstruction = new HashSet<AbstractObject>();
 		for(Asteroid block : space.getAsteroids()){
 			if(!block.isMineable()){
@@ -144,7 +155,7 @@ public class Vectoring {
 				if(i != j && space.isPathClearOfObstructions(space.getObjectById(order.get(i)).getPosition(),
 						space.getObjectById(order.get(j)).getPosition(),
 						obstruction,
-						space.getObjectById(order.get(0)).getRadius() + 2)){
+						(int) (space.getObjectById(order.get(0)).getRadius() * 1.4))){
 					next[i][j] = j;
 				}
 			}
@@ -268,7 +279,7 @@ public class Vectoring {
 	 */
 	public static AbstractAction advancedMovementVector(Toroidal2DPhysics space, Ship ship, AbstractObject target, int distanceFactor){
 		//speed adjustments relative to max accel
-		double movementFactor = 2.25;
+		double movementFactor = 1.6;
 		double movementMax = Movement.MAX_TRANSLATIONAL_ACCELERATION*movementFactor;
 		
 		AbstractAction sendOff = null;
