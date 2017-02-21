@@ -53,9 +53,11 @@ public class Vectoring {
 		
 		int sizeOfMap = objectOrder.size();
 		
+		//initializes the distance matrix and next matrix
 		int[][] next = nextLocation(objectOrder,space);
 		int[][] dist = distanceToNext(objectOrder,space,next);
 		
+		//the actual algorithm itself
 		for(int k = 0; k<sizeOfMap;k++){
 			for(int i=0;i<sizeOfMap;i++){
 				for(int j=0;j<sizeOfMap;j++){
@@ -80,6 +82,14 @@ public class Vectoring {
 		return movements;
 	}
 	
+	/**
+	 * path from a to be with the filled in matrix found from the algorithm
+	 * 
+	 * @param a
+	 * @param b
+	 * @param next
+	 * @return
+	 */
 	public static ArrayList<Integer> path(int a, int b, int[][] next){
 		ArrayList<Integer> temp = new ArrayList<Integer>();
 		temp.add(a);
@@ -115,6 +125,12 @@ public class Vectoring {
 							space.getObjectById(order.get(j)).getPosition()) + 
 							space.findShortestDistance(space.getObjectById(order.get(j)).getPosition(),
 									space.getObjectById(order.get(order.size() - 1)).getPosition()));
+					
+					//give slight priority to beacons
+					if(space.getObjectById(order.get(i)).getClass() == Beacon.class)
+						tempDist = tempDist / 2;
+					
+					
 					if((tempDist/2) <= space.findShortestDistance(space.getObjectById(order.get(i)).getPosition(), space.getObjectById(order.get(j)).getPosition()))
 						distance[i][j] = tempDist;
 				}
@@ -126,6 +142,7 @@ public class Vectoring {
 	
 	/**
 	 * Initializes the matrix which defines the next node
+	 * if there is a non collectable on the way to the next target it will not go through there
 	 * 
 	 * @param order
 	 * @param space

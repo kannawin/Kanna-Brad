@@ -1,4 +1,4 @@
-package kann0200;
+package brad9850;
 
 import java.awt.Color;
 import java.util.ArrayList;
@@ -83,9 +83,9 @@ public class ChaseBot extends TeamClient {
 		
 		AbstractAction newAction = new DoNothingAction();
 		
-		//if the next target is dead, it has been 15 timesteps since last refresh, or the list for the path is empty refresh
+		//if the next target is dead, it has been 25 timesteps since last refresh, or the list for the path is empty refresh
 		if(nextPosition.size() < 1
-				|| (space.getCurrentTimestep() - this.lastTimestep) > 15 
+				|| (space.getCurrentTimestep() - this.lastTimestep) > 25 
 				|| space.getObjectById(this.currentTarget) == null
 			)
 		{	
@@ -95,6 +95,12 @@ public class ChaseBot extends TeamClient {
 				this.nextPosition.remove(0);
 				this.currentTarget = space.getObjectById(this.nextPosition.get(this.nextPosition.size() - 1)).getId();
 		}
+		
+		
+		LineGraphics targetLine = new LineGraphics(space.getObjectById(ship.getId()).getPosition(),space.getObjectById(this.currentTarget).getPosition(),
+				space.findShortestDistanceVector(space.getObjectById(ship.getId()).getPosition(), space.getObjectById(this.currentTarget).getPosition()));
+		targetLine.setLineColor(Color.RED);
+		graphicsToAdd.add(targetLine);
 		
 		for(int i = 0; i<nextPosition.size();i++){
 			if(i != 0){
