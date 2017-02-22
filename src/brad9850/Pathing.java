@@ -44,7 +44,7 @@ public class Pathing {
 		double[][] distanceMatrix = distanceBetweenNodes(space, nodeList);
 
 		int[] parentNode = path_AStar(space, nodeList, distanceMatrix);
-		//int[] parentNode = path_GDFS(space, nodeList, distanceMatrix);
+//		int[] parentNode = path_GBFS(space, nodeList, distanceMatrix);
 
 		ArrayList<Integer> reversePath = new ArrayList<Integer>();
 		// Start at the goal, and walk backward to the start
@@ -304,7 +304,7 @@ public class Pathing {
 				AbstractObject firstNode = space.getObjectById(nodes.get(i));
 				AbstractObject secondNode = space.getObjectById(nodes.get(j));
 
-				int freeRadius = (int) (firstNode.getRadius() * 1.4);
+				int freeRadius = (int) (firstNode.getRadius() * 1.1);
 
 				if (space.isPathClearOfObstructions(firstNode.getPosition(), secondNode.getPosition(), obstructions,
 						freeRadius)) {

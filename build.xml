@@ -182,7 +182,7 @@
 		      dir="src"
 			  classpath="${dist}/spacesettlers.jar">
 			<jvmarg	value="-Xmx10G" />
-			<arg line="--graphics true "/>
+			<arg line="--graphics false "/>
 			<arg line="--configPath ../config/heuristicCompetitive/"/>
 			<arg line="--simulatorConfigFile SpaceSettlersConfig_Obstacle.xml"/>
 			<classpath>

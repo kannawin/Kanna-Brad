@@ -52,7 +52,13 @@ public class ChaseBot extends TeamClient {
 	public final int PathingFrequency = 25;
 	public final boolean Drawing = true;
 	
-
+	Position previousPosition = null;
+	
+	int sum = 0;
+	int count = 0;
+	int previousTimestep = 0;
+	
+	
 	/**
 	 * 
 	 */
@@ -89,7 +95,7 @@ public class ChaseBot extends TeamClient {
 		AbstractAction newAction = new DoNothingAction();
 		
 		//Find our target
-		if(isValidTarget(space, targetID)){
+		if(!isValidTarget(space, targetID)){
 			targetID = findTarget(space, ship);
 		}
 		AbstractObject target = space.getObjectById(targetID);
@@ -162,7 +168,9 @@ public class ChaseBot extends TeamClient {
 	 * @return
 	 */
 	private boolean isValidTarget(Toroidal2DPhysics space, UUID targetID){
-		return (targetID == null || !space.getObjectById(targetID).isAlive());
+		return (targetID != null
+				&& space.getObjectById(targetID) != null
+				&& space.getObjectById(targetID).isAlive());
 	}
 	
 	/**
