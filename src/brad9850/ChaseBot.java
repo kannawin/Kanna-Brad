@@ -101,21 +101,21 @@ public class ChaseBot extends TeamClient {
 		targetLine.setLineColor(Color.RED);
 		graphicsToAdd.add(targetLine);
 		
-		for(int i = 0; i<nextPosition.size();i++){
-			if(i != 0){
-				graphicsToAdd.add(new StarGraphics(3, Color.WHITE, space.getObjectById(nextPosition.get(i)).getPosition()));
-				LineGraphics line = new LineGraphics(space.getObjectById(nextPosition.get(i-1)).getPosition(), space.getObjectById(nextPosition.get(i)).getPosition(), 
-						space.findShortestDistanceVector(space.getObjectById(nextPosition.get(i-1)).getPosition(), space.getObjectById(nextPosition.get(i)).getPosition()));
-				line.setLineColor(Color.WHITE);
-				graphicsToAdd.add(line);
+		for(int i = 0; i < nextPosition.size(); i++){
+			//TODO: Solve root cause of this, and of all evil
+			if(space.getObjectById(nextPosition.get(i)) == null){
+				break;
 			}
-			else{
-				graphicsToAdd.add(new StarGraphics(3, Color.WHITE, space.getObjectById(ship.getId()).getPosition()));
-				LineGraphics line = new LineGraphics(space.getObjectById(ship.getId()).getPosition(), space.getObjectById(nextPosition.get(i)).getPosition(), 
-						space.findShortestDistanceVector(space.getObjectById(ship.getId()).getPosition(), space.getObjectById(nextPosition.get(i)).getPosition()));
-				line.setLineColor(Color.WHITE);
-				graphicsToAdd.add(line);
+			Position thisPosition = space.getObjectById(nextPosition.get(i)).getPosition();
+			Position previousPosition = ship.getPosition();
+			if(i > 0){
+				previousPosition = space.getObjectById(nextPosition.get(i - 1)).getPosition();
 			}
+			
+			graphicsToAdd.add(new StarGraphics(3, Color.WHITE, thisPosition));
+			LineGraphics line = new LineGraphics(previousPosition, thisPosition, space.findShortestDistanceVector(previousPosition, thisPosition));
+			line.setLineColor(Color.WHITE);
+			graphicsToAdd.add(line);
 		}
 		
 		

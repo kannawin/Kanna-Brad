@@ -101,8 +101,6 @@ public class Vectoring {
 		int currentNode = startIndex;
 		hasBeenVisited[currentNode] = true;
 		pathCostList[currentNode] = 0;
-		
-		System.out.println("Reached here");
 
 		while (currentNode != goalIndex) {
 			// Find all unvisited nodes connected to the current node
@@ -136,8 +134,6 @@ public class Vectoring {
 			hasBeenVisited[bestNode] = true;
 			frontier.remove(frontier.indexOf(bestNode));
 		}
-		
-		System.out.println("And here");
 
 		return parentNode;
 	}
