@@ -35,7 +35,6 @@ import spacesettlers.utilities.Position;
  * It traverses using distance between nodes (mineable asteroids, and beacons)
  * The heuristic function is direct distance to the target
  * It gets a path by seeing if between asteroid is a non mineable asteroid and deletes that edge
- * It gets the shortest path using the Floyd-Warshall all pairs shortest path algorithm
  * 
  * @author Christopher Bradford & Scott Kannawin
  */
@@ -91,7 +90,7 @@ public class ChaseBot extends TeamClient {
 		{	
 				this.nextPosition = new ArrayList<UUID>();
 				this.lastTimestep = space.getCurrentTimestep();
-				this.nextPosition = Vectoring.findPath(space, ship, Combat.nearestEnemy(space,ship));
+				this.nextPosition = Pathing.findPath(space, ship, Combat.nearestEnemy(space,ship));
 				this.currentTarget = space.getObjectById(this.nextPosition.get(this.nextPosition.size() - 1)).getId();
 		}
 		
@@ -143,7 +142,7 @@ public class ChaseBot extends TeamClient {
 				}
 				else{
 					this.nextPosition = new ArrayList<UUID>();
-					this.nextPosition = Vectoring.findPath(space, ship, Combat.nearestEnemy(space, ship));
+					this.nextPosition = Pathing.findPath(space, ship, Combat.nearestEnemy(space, ship));
 					newAction = Vectoring.advancedMovementVector(space, ship, space.getObjectById(nextPosition.get(0)), 150);
 				}
 			}
@@ -154,7 +153,7 @@ public class ChaseBot extends TeamClient {
 		}
 		else{
 			this.nextPosition = new ArrayList<UUID>();
-			this.nextPosition = Vectoring.findPath(space, ship, Combat.nearestEnemy(space, ship));
+			this.nextPosition = Pathing.findPath(space, ship, Combat.nearestEnemy(space, ship));
 			newAction = Vectoring.advancedMovementVector(space, ship, space.getObjectById(nextPosition.get(0)), 150);
 		}
 			/*
