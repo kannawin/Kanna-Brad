@@ -44,6 +44,7 @@ public class Pathing {
 		double[][] distanceMatrix = distanceBetweenNodes(space, nodeList);
 
 		int[] parentNode = path_AStar(space, nodeList, distanceMatrix);
+		//int[] parentNode = path_GDFS(space, nodeList, distanceMatrix);
 
 		ArrayList<Integer> reversePath = new ArrayList<Integer>();
 		// Start at the goal, and walk backward to the start
@@ -63,6 +64,77 @@ public class Pathing {
 		}
 
 		return path;
+	}
+	
+	/**
+	 * Gets the parents of nodes based on the greedy BFS algorithm
+	 * 
+	 * @param space
+	 * @param nodeList
+	 * @param distanceMatrix
+	 * @return
+	 */
+	public static int[] path_GBFS(Toroidal2DPhysics space, ArrayList<UUID> nodeList, double[][] distanceMatrix) {
+		int nodeCount = nodeList.size();
+		int startIndex = 0;
+		int goalIndex = 1;
+
+		UUID goalID = nodeList.get(goalIndex);
+
+		double[] heuristicList = getHeuristicValues(space, nodeList, goalID);
+
+		int[] parentNode = new int[nodeCount];
+
+		// Defaults to false
+		boolean[] hasBeenVisited = new boolean[nodeCount];
+		boolean[] inFrontier = new boolean[nodeCount];
+
+		// Initialize values
+		for (int i = 0; i < nodeCount; i++) {
+			parentNode[i] = -1;
+		}
+
+		// Start GBFS
+		int currentNode = startIndex;
+		hasBeenVisited[currentNode] = true;
+		
+
+		while (currentNode != goalIndex) {
+			// Find all unvisited nodes connected to the current node
+			for (int i = 0; i < nodeCount; i++) {
+				if (!hasBeenVisited[i] && (distanceMatrix[currentNode][i] >= 0)) {
+					if(!inFrontier[i]){
+						inFrontier[i] = true;
+						parentNode[i] = currentNode;
+					}
+				}
+			}
+			
+			//Find the next node to visit
+			int bestNode = -1;
+			double bestNodeScore = VeryLargeValue;
+			for(int i = 0; i < nodeCount; i++){
+				if(inFrontier[i]){
+					double nodeScore = heuristicList[i];
+					if(nodeScore < bestNodeScore){
+						bestNode = i;
+						bestNodeScore = nodeScore;
+					}
+				}
+			}
+			
+			//If there were no more nodes, quit
+			if(bestNode == -1){
+				break;
+			}
+			
+			//Update current node
+			currentNode = bestNode;
+			hasBeenVisited[bestNode] = true;
+			inFrontier[bestNode] = false;
+		}
+
+		return parentNode;
 	}
 
 	/**
