@@ -45,7 +45,7 @@ public class SpaceSettlersSimulator {
 	/**
 	 * Max time allowed in MILLISECONDS for a team to return actions
 	 */
-    public static int TEAM_ACTION_TIMEOUT = 3000;
+    public static int TEAM_ACTION_TIMEOUT = 300;
 
 	/**
 	 * Max time allowed in MILLISECONDS for a getMovement to return
