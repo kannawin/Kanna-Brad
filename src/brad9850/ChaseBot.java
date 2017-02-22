@@ -91,7 +91,7 @@ public class ChaseBot extends TeamClient {
 		{	
 				this.nextPosition = new ArrayList<UUID>();
 				this.lastTimestep = space.getCurrentTimestep();
-				this.nextPosition = Vectoring.movementMap(space, Combat.nearestEnemy(space,ship), ship);
+				this.nextPosition = Vectoring.findPath(space, ship, Combat.nearestEnemy(space,ship));
 				this.nextPosition.remove(0);
 				this.currentTarget = space.getObjectById(this.nextPosition.get(this.nextPosition.size() - 1)).getId();
 		}
@@ -144,7 +144,7 @@ public class ChaseBot extends TeamClient {
 				}
 				else{
 					this.nextPosition = new ArrayList<UUID>();
-					this.nextPosition = Vectoring.movementMap(space, Combat.nearestEnemy(space, ship), ship);
+					this.nextPosition = Vectoring.findPath(space, ship, Combat.nearestEnemy(space, ship));
 					this.nextPosition.remove(0);
 					newAction = Vectoring.advancedMovementVector(space, ship, space.getObjectById(nextPosition.get(0)), 150);
 				}
@@ -156,7 +156,7 @@ public class ChaseBot extends TeamClient {
 		}
 		else{
 			this.nextPosition = new ArrayList<UUID>();
-			this.nextPosition = Vectoring.movementMap(space, Combat.nearestEnemy(space, ship), ship);
+			this.nextPosition = Vectoring.findPath(space, ship, Combat.nearestEnemy(space, ship));
 			this.nextPosition.remove(0);
 			newAction = Vectoring.advancedMovementVector(space, ship, space.getObjectById(nextPosition.get(0)), 150);
 		}
