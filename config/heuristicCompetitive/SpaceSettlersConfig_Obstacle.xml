@@ -55,7 +55,7 @@
 		<maximumNumberAsteroids>100</maximumNumberAsteroids>
 
 		<!-- The probability an asteroid is movable -->
-		<probabilityMoveable>0</probabilityMoveable>
+		<probabilityMoveable>.25</probabilityMoveable>
 		
 		<!-- The maximum initial velocity of a move-able asteroid -->
 		<maxInitialVelocity>15</maxInitialVelocity>
