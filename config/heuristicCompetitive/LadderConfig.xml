@@ -4,7 +4,7 @@
 	<numRepeatMatches>3</numRepeatMatches>
 
 	<!-- The maximum number of variable (e.g. can change each match) teams in a game -->
-	<maximumNumberVariableTeams>3</maximumNumberVariableTeams>
+	<maximumNumberVariableTeams>1</maximumNumberVariableTeams>
 	
 	<!-- Write out the results to this file -->
 	<outputFileName>self-ladder.html</outputFileName>
@@ -26,7 +26,7 @@
 			<initialRegionRadius>300</initialRegionRadius>
 		</HighLevelTeamConfig>
 		<HighLevelTeamConfig>
-			<teamName>HeuristicTeam</teamName>
+			<teamName>HeuristicMinerTeam</teamName>
 			<configFile>aggressive-heuristic-clientinit.xml</configFile>
 			<initialRegionCenterX>640</initialRegionCenterX>
 			<initialRegionCenterY>400</initialRegionCenterY>
@@ -37,22 +37,6 @@
 	<!-- The list of variable clients/teams.  Each will participate in numRepeatMatches but against 
 		 each other and the static teams. -->
 	<variableTeams>
-		<HighLevelTeamConfig>
-			<teamName>ModelBot</teamName>
-			<configFile>ModelBot-clientinit.xml</configFile>
-		</HighLevelTeamConfig>
-		<HighLevelTeamConfig>
-			<teamName>BaseBot</teamName>
-			<configFile>BaseBot-clientinit.xml</configFile>
-		</HighLevelTeamConfig>
-		<HighLevelTeamConfig>
-			<teamName>BalletBot</teamName>
-			<configFile>BalletBot-clientinit.xml</configFile>
-		</HighLevelTeamConfig>
-		<HighLevelTeamConfig>
-			<teamName>ChaseBot</teamName>
-			<configFile>ChaseBot-clientinit.xml</configFile>
-		</HighLevelTeamConfig>
 		<HighLevelTeamConfig>
 			<teamName>DoNothingTeam</teamName>
 			<configFile>donothing-clientinit.xml</configFile>
