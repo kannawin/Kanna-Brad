@@ -30,6 +30,7 @@ import spacesettlers.objects.weapons.Missile;
 import spacesettlers.simulator.Toroidal2DPhysics;
 import spacesettlers.utilities.Movement;
 import spacesettlers.utilities.Position;
+import spacesettlers.clients.examples.ExampleGAPopulation;
 /**
  * A* based Agent that only hunts down the nearest enemy
  * It traverses using distance between nodes (mineable asteroids, and beacons)
@@ -46,12 +47,23 @@ public class ChaseBot extends TeamClient {
 	int lastTimestep = 0;
 	UUID currentTarget = null;
 	private ArrayList<SpacewarGraphics> graphicsToAdd;
-
+	private int steps = 0;
+	private int evalSteps = 1500;
+	
+	private int popSize = 20;
+	private int velocityThreshold = 150;
+	private int energyThreshold = 1500;
+	private ExampleGAPopulation population;
+	
 	/**
 	 * 
 	 */
 	public Map<UUID, AbstractAction> getMovementStart(Toroidal2DPhysics space,
 			Set<AbstractActionableObject> actionableObjects) {
+		
+		//TODO GENETIC ALGORITHM START
+		
+		
 		HashMap<UUID, AbstractAction> actions = new HashMap<UUID, AbstractAction>();
 		graphicsToAdd = new ArrayList<SpacewarGraphics>();
 		// loop through each ship
@@ -59,7 +71,13 @@ public class ChaseBot extends TeamClient {
 			if (actionable instanceof Ship) {
 				Ship ship = (Ship) actionable;
 				
-				AbstractAction action = getAction(space, ship);
+				AbstractAction action;
+				if(ship.getCurrentAction() == null){
+					action = getAction(space, ship);
+				}
+				else{
+					action = getAction(space,ship);
+				}
 				actions.put(ship.getId(), action);
 				
 			} else {
@@ -79,6 +97,7 @@ public class ChaseBot extends TeamClient {
 	private AbstractAction getAction(Toroidal2DPhysics space, Ship ship) {
 		//ship.getPosition().setAngularVelocity(Movement.MAX_ANGULAR_ACCELERATION);
 		//nullify from previous action
+		
 		ship.setCurrentAction(null);
 		
 		AbstractAction newAction = new DoNothingAction();
@@ -96,6 +115,8 @@ public class ChaseBot extends TeamClient {
 				this.currentTarget = space.getObjectById(this.nextPosition.get(this.nextPosition.size() - 1)).getId();
 		}
 		
+		
+		//adds graphics for positions
 		for(int i = 0; i<nextPosition.size();i++){
 			if(i != 0){
 				graphicsToAdd.add(new StarGraphics(3, Color.WHITE, space.getObjectById(nextPosition.get(i)).getPosition()));
@@ -134,25 +155,25 @@ public class ChaseBot extends TeamClient {
 				if(nextPosition.size() > 1){
 					nextPosition.remove(0);
 					//newAction = new MoveToObjectAction(space, ship.getPosition(), space.getObjectById(nextPosition.get(0)));
-					newAction = Vectoring.advancedMovementVector(space, ship, space.getObjectById(nextPosition.get(0)), 150);
+					newAction = Vectoring.advancedMovementVector(space, ship, space.getObjectById(nextPosition.get(0)), this.velocityThreshold);
 				}
 				else{
 					this.nextPosition = new ArrayList<UUID>();
 					this.nextPosition = Vectoring.movementMap(space, Combat.nearestEnemy(space, ship), ship);
 					this.nextPosition.remove(0);
-					newAction = Vectoring.advancedMovementVector(space, ship, space.getObjectById(nextPosition.get(0)), 150);
+					newAction = Vectoring.advancedMovementVector(space, ship, space.getObjectById(nextPosition.get(0)), this.velocityThreshold);
 				}
 			}
 			else{
 				//newAction = new MoveToObjectAction(space, ship.getPosition(), space.getObjectById(nextPosition.get(0)));
-				newAction = Vectoring.advancedMovementVector(space, ship, space.getObjectById(nextPosition.get(0)), 150);
+				newAction = Vectoring.advancedMovementVector(space, ship, space.getObjectById(nextPosition.get(0)), this.velocityThreshold);
 			}
 		}
 		else{
 			this.nextPosition = new ArrayList<UUID>();
 			this.nextPosition = Vectoring.movementMap(space, Combat.nearestEnemy(space, ship), ship);
 			this.nextPosition.remove(0);
-			newAction = Vectoring.advancedMovementVector(space, ship, space.getObjectById(nextPosition.get(0)), 150);
+			newAction = Vectoring.advancedMovementVector(space, ship, space.getObjectById(nextPosition.get(0)), this.velocityThreshold);
 		}
 			/*
 		}
@@ -168,6 +189,26 @@ public class ChaseBot extends TeamClient {
 
 	@Override
 	public void getMovementEnd(Toroidal2DPhysics space, Set<AbstractActionableObject> actionableObjects) {
+		//TODO GENETIC ALGORITHM END
+		steps++;
+		//evaluates 
+		if (steps % evalSteps == 0) {
+		/*
+			// note that this method currently scores every policy as zero as this is part of 
+			// what the student has to do
+			population.evaluateFitnessForCurrentMember(space);
+
+			// move to the next member of the population
+			currentPolicy = population.getNextMember();
+
+			if (population.isGenerationFinished()) {
+				// note that this is also an empty method that a student needs to fill in
+				population.makeNextGeneration();
+				
+				currentPolicy = population.getNextMember();
+			}
+			*/
+		}
 	}
 
 	@Override

@@ -31,8 +31,8 @@
 		     to the configuration file for that team.  Also, teams can have initial bounding boxes
 		     which bound where the ships and the base will be created. -->
 		<HighLevelTeamConfig>
-			<teamName>RandomClient</teamName>
-			<configFile>random-clientinit.xml</configFile>
+			<teamName>ChaseBot</teamName>
+			<configFile>ChaseBot-clientinit.xml</configFile>
 		</HighLevelTeamConfig>
 		<HighLevelTeamConfig>
 			<teamName>BeaconCollectorTeam</teamName>
@@ -45,14 +45,18 @@
 		</HighLevelTeamConfig>
 		<HighLevelTeamConfig>
 			<teamName>DoNothingTeam</teamName>
-			<configFile>donothing-clientinit.xml</configFile>
+			<configFile>beacon-clientinit.xml</configFile>
 		</HighLevelTeamConfig>		
+		<HighLevelTeamConfig>
+			<teamName>GABOT</teamName>
+			<configFile>ga-clientinit.xml</configFile>
+		</HighLevelTeamConfig>	
 	</teams>
 
 	<!-- Each team needs a base.  Optionally, you can initialize the location of the base -->
 	<bases>
 		<BaseConfig>
-			<teamName>RandomClient</teamName>
+			<teamName>ChaseBot</teamName>
 		</BaseConfig>
 		<BaseConfig>
 			<teamName>BeaconCollectorTeam</teamName>
@@ -62,6 +66,9 @@
 		</BaseConfig>
 		<BaseConfig>
 			<teamName>DoNothingTeam</teamName>
+		</BaseConfig>
+		<BaseConfig>
+			<teamName>GABOT</teamName>
 		</BaseConfig>
 	</bases>
 	
