@@ -30,7 +30,6 @@ import spacesettlers.objects.weapons.Missile;
 import spacesettlers.simulator.Toroidal2DPhysics;
 import spacesettlers.utilities.Movement;
 import spacesettlers.utilities.Position;
-import spacesettlers.clients.examples.ExampleGAPopulation;
 /**
  * A* based Agent that only hunts down the nearest enemy
  * It traverses using distance between nodes (mineable asteroids, and beacons)
@@ -50,34 +49,70 @@ public class ChaseBot extends TeamClient {
 	private int steps = 0;
 	private int evalSteps = 1500;
 	
-	private int popSize = 20;
-	private int velocityThreshold = 150;
-	private int energyThreshold = 1500;
-	private ExampleGAPopulation population;
 	
+	private ArrayList<UUID> positions = new ArrayList<UUID>();
+	private int popSize = 20;
+	private int distanceThreshold = 150;
+	private int energyThreshold = 1500;
+	//private GAPopulation population;
+	private GAChromosome policy;
+	boolean doneAction = false;
+
 	/**
 	 * 
 	 */
 	public Map<UUID, AbstractAction> getMovementStart(Toroidal2DPhysics space,
 			Set<AbstractActionableObject> actionableObjects) {
-		
-		//TODO GENETIC ALGORITHM START
-		
-		
 		HashMap<UUID, AbstractAction> actions = new HashMap<UUID, AbstractAction>();
 		graphicsToAdd = new ArrayList<SpacewarGraphics>();
 		// loop through each ship
 		for (AbstractObject actionable :  actionableObjects) {
 			if (actionable instanceof Ship) {
 				Ship ship = (Ship) actionable;
+				shouldShoot = false;
+				drawPath(space,ship);
 				
 				AbstractAction action;
-				if(ship.getCurrentAction() == null){
-					action = getAction(space, ship);
+				if(this.doneAction || this.positions.size() == 0 || (positions.size() < 1 && space.getObjectById(this.positions.get(this.positions.size() - 1)).isAlive() == false)){
+					//get new movementmap
+					GAState newState = new GAState(space,ship);
+					this.positions = newState.returnNextPosition(space,ship);
+					//has a 1/25 chance of doing something random
+					//policy.getCurrentAction(space, ship, newState, 25);
+					action =  Vectoring.advancedMovementVector(space, ship, space.getObjectById(this.positions.get(0)), this.distanceThreshold);
 				}
 				else{
-					action = getAction(space,ship);
+					try{
+						//continue movement map
+						if( space.findShortestDistance(ship.getPosition(), space.getObjectById(this.positions.get(0)).getPosition()) < 50
+								&& space.getObjectById(this.positions.get(0)).getClass() != Ship.class){
+							action = Vectoring.advancedMovementVector(space, ship, space.getObjectById(this.positions.get(0)), this.distanceThreshold);
+							this.positions.remove(0);
+						}
+						//is a ship
+						else{
+							if(space.getObjectById(this.positions.get(this.positions.size()-1)).isAlive()){
+								action = Vectoring.advancedMovementVector(space, ship, space.getObjectById(this.positions.get(0)), 10);
+								if(Combat.willHitMovingTarget(space, ship, space.getObjectById(this.positions.get(this.positions.size() - 1)), space.getObjectById(this.positions.get(this.positions.size() - 1)).getPosition().getTranslationalVelocity())){
+									shouldShoot= true;
+								}
+							}
+							else{
+								//need to get a new movement map
+								GAState newState = new GAState(space,ship);
+								this.positions = newState.returnNextPosition(space,ship);
+								//policy.getCurrentAction(space, ship, newState, 25);
+								action = Vectoring.advancedMovementVector(space, ship, space.getObjectById(this.positions.get(0)), this.distanceThreshold);
+							}
+						}
+					}
+					catch(NullPointerException e){
+						GAState newState = new GAState(space,ship);
+						this.positions = newState.returnNextPosition(space, ship);
+						action = Vectoring.advancedMovementVector(space, ship, space.getObjectById(this.positions.get(0)), this.distanceThreshold);
+					}
 				}
+
 				actions.put(ship.getId(), action);
 				
 			} else {
@@ -88,105 +123,6 @@ public class ChaseBot extends TeamClient {
 		return actions;
 	}
 	
-	/**
-	 * Gets the action for our ship
-	 * @param space
-	 * @param ship
-	 * @return
-	 */
-	private AbstractAction getAction(Toroidal2DPhysics space, Ship ship) {
-		//ship.getPosition().setAngularVelocity(Movement.MAX_ANGULAR_ACCELERATION);
-		//nullify from previous action
-		
-		ship.setCurrentAction(null);
-		
-		AbstractAction newAction = new DoNothingAction();
-		
-		//if the next target is dead, it has been 15 timesteps since last refresh, or the list for the path is empty refresh
-		if(nextPosition.size() < 1
-				|| (space.getCurrentTimestep() - this.lastTimestep) > 15 
-				|| space.getObjectById(this.currentTarget) == null
-			)
-		{	
-				this.nextPosition = new ArrayList<UUID>();
-				this.lastTimestep = space.getCurrentTimestep();
-				this.nextPosition = Vectoring.movementMap(space, Combat.nearestEnemy(space,ship), ship);
-				this.nextPosition.remove(0);
-				this.currentTarget = space.getObjectById(this.nextPosition.get(this.nextPosition.size() - 1)).getId();
-		}
-		
-		
-		//adds graphics for positions
-		for(int i = 0; i<nextPosition.size();i++){
-			if(i != 0){
-				graphicsToAdd.add(new StarGraphics(3, Color.WHITE, space.getObjectById(nextPosition.get(i)).getPosition()));
-				LineGraphics line = new LineGraphics(space.getObjectById(nextPosition.get(i-1)).getPosition(), space.getObjectById(nextPosition.get(i)).getPosition(), 
-						space.findShortestDistanceVector(space.getObjectById(nextPosition.get(i-1)).getPosition(), space.getObjectById(nextPosition.get(i)).getPosition()));
-				line.setLineColor(Color.WHITE);
-				graphicsToAdd.add(line);
-			}
-			else{
-				graphicsToAdd.add(new StarGraphics(3, Color.WHITE, space.getObjectById(ship.getId()).getPosition()));
-				LineGraphics line = new LineGraphics(space.getObjectById(ship.getId()).getPosition(), space.getObjectById(nextPosition.get(i)).getPosition(), 
-						space.findShortestDistanceVector(space.getObjectById(ship.getId()).getPosition(), space.getObjectById(nextPosition.get(i)).getPosition()));
-				line.setLineColor(Color.WHITE);
-				graphicsToAdd.add(line);
-			}
-		}
-		
-		
-		
-		if(Combat.willHitMovingTarget(space, ship, space.getObjectById(this.currentTarget), space.getObjectById(this.currentTarget).getPosition().getTranslationalVelocity())){
-			shouldShoot= true;
-		}
-		else{
-			shouldShoot = false;
-		}
-		
-		//if(ship.getEnergy() > 1750){
-		if(space.getObjectById(this.currentTarget).isAlive()){
-
-			
-			//TODO fix the logic here, should be if it is within a certain distance of the next target move to next item
-			//else if target is still alive be on it
-			//account for if an item is null or not (picked up / destroyed)
-			if(!space.getObjectById(this.currentTarget).isAlive() || space.getObjectById(this.nextPosition.get(0)) == null)
-			{
-				if(nextPosition.size() > 1){
-					nextPosition.remove(0);
-					//newAction = new MoveToObjectAction(space, ship.getPosition(), space.getObjectById(nextPosition.get(0)));
-					newAction = Vectoring.advancedMovementVector(space, ship, space.getObjectById(nextPosition.get(0)), this.velocityThreshold);
-				}
-				else{
-					this.nextPosition = new ArrayList<UUID>();
-					this.nextPosition = Vectoring.movementMap(space, Combat.nearestEnemy(space, ship), ship);
-					this.nextPosition.remove(0);
-					newAction = Vectoring.advancedMovementVector(space, ship, space.getObjectById(nextPosition.get(0)), this.velocityThreshold);
-				}
-			}
-			else{
-				//newAction = new MoveToObjectAction(space, ship.getPosition(), space.getObjectById(nextPosition.get(0)));
-				newAction = Vectoring.advancedMovementVector(space, ship, space.getObjectById(nextPosition.get(0)), this.velocityThreshold);
-			}
-		}
-		else{
-			this.nextPosition = new ArrayList<UUID>();
-			this.nextPosition = Vectoring.movementMap(space, Combat.nearestEnemy(space, ship), ship);
-			this.nextPosition.remove(0);
-			newAction = Vectoring.advancedMovementVector(space, ship, space.getObjectById(nextPosition.get(0)), this.velocityThreshold);
-		}
-			/*
-		}
-		else{
-			newAction = Vectoring.advancedMovementVector(space, ship, Combat.nearestBeacon(space, ship), 150);
-		}
-		*/
-		return newAction;
-	}
-	
-	
-	
-
 	@Override
 	public void getMovementEnd(Toroidal2DPhysics space, Set<AbstractActionableObject> actionableObjects) {
 		//TODO GENETIC ALGORITHM END
@@ -210,6 +146,54 @@ public class ChaseBot extends TeamClient {
 			*/
 		}
 	}
+	
+	
+	
+	
+	
+	
+	/**
+	 * Draw a line directly connecting the ship and its target, and a bunch of lines connecting the path nodes between the two
+	 * @param space
+	 * @param ship
+	 */
+	private void drawPath(Toroidal2DPhysics space, Ship ship){
+		//Don't try to draw a path that doesn't exist
+		if(this.positions.size() == 0){
+			return;
+		}
+		
+		Position shipPosition = ship.getPosition();
+		Position targetPosition= ship.getPosition();
+		try{
+			targetPosition = space.getObjectById(this.positions.get(this.positions.size() - 1)).getPosition();
+		}
+		catch(NullPointerException e){
+			targetPosition = ship.getPosition();
+		}
+		LineGraphics targetLine = new LineGraphics(shipPosition, targetPosition, space.findShortestDistanceVector(shipPosition, targetPosition));
+		targetLine.setLineColor(Color.RED);
+		graphicsToAdd.add(targetLine);
+		
+		for(int i = 0; i < positions.size(); i++){
+			//TODO: Solve root cause of this, and of all evil
+			if(space.getObjectById(positions.get(i)) == null){
+				break;
+			}
+			Position thisPosition = space.getObjectById(positions.get(i)).getPosition();
+			Position previousPosition = ship.getPosition();
+			if(i > 0){
+				previousPosition = space.getObjectById(positions.get(i - 1)).getPosition();
+			}
+			
+			graphicsToAdd.add(new StarGraphics(3, Color.WHITE, thisPosition));
+			LineGraphics line = new LineGraphics(previousPosition, thisPosition, space.findShortestDistanceVector(previousPosition, thisPosition));
+			line.setLineColor(Color.WHITE);
+			graphicsToAdd.add(line);
+		}
+	}
+	
+	
 
 	@Override
 	public void initialize(Toroidal2DPhysics space) {

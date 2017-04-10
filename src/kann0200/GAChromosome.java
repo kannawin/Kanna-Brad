@@ -6,15 +6,11 @@ import java.util.Random;
 import spacesettlers.actions.AbstractAction;
 import spacesettlers.actions.DoNothingAction;
 import spacesettlers.actions.MoveToObjectAction;
+import spacesettlers.objects.AbstractObject;
 import spacesettlers.objects.Ship;
 import spacesettlers.simulator.Toroidal2DPhysics;
 
-/**
- * An example chromosome for a space settlers agent using genetic algorithms / evolutionary computation
- * 
- * @author amy
- *
- */
+
 public class GAChromosome {
 	private HashMap<GAState, AbstractAction> policy;
 	
@@ -28,28 +24,21 @@ public class GAChromosome {
 	 * @param currentState
 	 * @return
 	 */
-	public AbstractAction getCurrentAction(Toroidal2DPhysics space, Ship ship, GAState currentState, Random rand) {
-		
-		
-		
-		
-		
+	public void getCurrentAction(Toroidal2DPhysics space, Ship ship, GAState currentState, int rand) {
+		AbstractObject target = space.getObjectById(currentState.returnNextPosition(space, ship).get(currentState.returnNextPosition(space, ship).size()));
 		
 		if (!policy.containsKey(currentState)) {
-			// randomly chose to either do nothing or go to the nearest
-			// asteroid.  Note this needs to be changed in a real agent as it won't learn 
-			// much here!
-			if (rand.nextBoolean()) {
-				policy.put(currentState, new DoNothingAction());
+			if (new Random().nextInt(rand)==0) {
+				policy.put(currentState, Vectoring.advancedMovementVector(space, ship, Combat.nearestBeacon(space, ship), 150));
 			} else {
-				//System.out.println("Moving to nearestMineable Asteroid " + myShip.getPosition() + " nearest " + currentState.getNearestMineableAsteroid().getPosition());
-				policy.put(currentState, Vectoring.advancedMovementVector(space, ship, space.getObjectById(currentState.getTarget()), 150));
+				policy.put(currentState, Vectoring.advancedMovementVector(space, ship, target, 150));
 			}
 		}
 
-		return policy.get(currentState);
+		//return policy.get(currentState);
 
 	}
+	
 	
 	
 }
