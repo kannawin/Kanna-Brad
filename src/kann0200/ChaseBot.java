@@ -1,6 +1,8 @@
 package kann0200;
 
 import java.awt.Color;
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -47,19 +49,17 @@ public class ChaseBot extends TeamClient {
 	UUID currentTarget = null;
 	private ArrayList<SpacewarGraphics> graphicsToAdd;
 	private int steps = 0;
-	private int evalSteps = 1500;
+	private int evalSteps = 1999;
 	
-	GAPopulation population;
+	private GAPopulation population;
 	private ArrayList<UUID> positions = new ArrayList<UUID>();
 	private int popSize = 20;
 	private int distanceThreshold = 150;
-	private int energyThreshold = 1500;
 	private int deltaDeath = 0;
 	private int deltaKill = 0;
 	private double velocity = Movement.MAX_TRANSLATIONAL_ACCELERATION;
-	//private GAPopulation population;
-	private GAChromosome policy;
 	boolean doneAction = false;
+	private int generation = 0;
 
 	/**
 	 * 
@@ -94,7 +94,7 @@ public class ChaseBot extends TeamClient {
 						}
 						//is a ship
 						else{
-							if(space.getObjectById(this.positions.get(this.positions.size()-1)).isAlive()){
+							if(space.getObjectById(this.positions.get(this.positions.size()-1)).isAlive() && ship.getEnergy() > 1500){
 								action = Vectoring.advancedMovementVector(space, ship, space.getObjectById(this.positions.get(0)), 10, this.velocity);
 								if(Combat.willHitMovingTarget(space, ship, space.getObjectById(this.positions.get(this.positions.size() - 1)), space.getObjectById(this.positions.get(this.positions.size() - 1)).getPosition().getTranslationalVelocity())){
 									shouldShoot= true;
@@ -138,22 +138,23 @@ public class ChaseBot extends TeamClient {
 					Ship ship = (Ship) actionable;
 					// note that this method currently scores every policy as zero as this is part of 
 					// what the student has to do
-					population.evaluateFitnessForCurrentMember(space, ship, this.deltaDeath, this.deltaKill);
+					population.evaluateFitnessForCurrentMember(space, ship, this.deltaDeath, this.deltaKill, this.velocity);
 					this.deltaDeath = ship.getKillsReceived();
 					this.deltaKill = ship.getKillsInflicted();
+					this.velocity = population.nextVelocity();
 				}
 			}
-		/*
+		
 			// move to the next member of the population
-			currentPolicy = population.getNextMember();
+			population.getNextMember();
 
 			if (population.isGenerationFinished()) {
 				// note that this is also an empty method that a student needs to fill in
 				population.makeNextGeneration();
 				
-				currentPolicy = population.getNextMember();
+				population.getNextMember();
 			}
-			*/
+			
 		}
 	}
 	
@@ -207,6 +208,9 @@ public class ChaseBot extends TeamClient {
 
 	@Override
 	public void initialize(Toroidal2DPhysics space) {
+		population = new GAPopulation(this.popSize);
+		population.setGeneration("kanna-brad.txt");
+		this.velocity = population.getVelocity();
 	}
 
 	@Override
