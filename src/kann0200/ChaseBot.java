@@ -49,11 +49,14 @@ public class ChaseBot extends TeamClient {
 	private int steps = 0;
 	private int evalSteps = 1500;
 	
-	
+	GAPopulation population;
 	private ArrayList<UUID> positions = new ArrayList<UUID>();
 	private int popSize = 20;
 	private int distanceThreshold = 150;
 	private int energyThreshold = 1500;
+	private int deltaDeath = 0;
+	private int deltaKill = 0;
+	private double velocity = Movement.MAX_TRANSLATIONAL_ACCELERATION;
 	//private GAPopulation population;
 	private GAChromosome policy;
 	boolean doneAction = false;
@@ -79,20 +82,20 @@ public class ChaseBot extends TeamClient {
 					this.positions = newState.returnNextPosition(space,ship);
 					//has a 1/25 chance of doing something random
 					//policy.getCurrentAction(space, ship, newState, 25);
-					action =  Vectoring.advancedMovementVector(space, ship, space.getObjectById(this.positions.get(0)), this.distanceThreshold);
+					action =  Vectoring.advancedMovementVector(space, ship, space.getObjectById(this.positions.get(0)), this.distanceThreshold, this.velocity);
 				}
 				else{
 					try{
 						//continue movement map
 						if( space.findShortestDistance(ship.getPosition(), space.getObjectById(this.positions.get(0)).getPosition()) < 50
 								&& space.getObjectById(this.positions.get(0)).getClass() != Ship.class){
-							action = Vectoring.advancedMovementVector(space, ship, space.getObjectById(this.positions.get(0)), this.distanceThreshold);
+							action = Vectoring.advancedMovementVector(space, ship, space.getObjectById(this.positions.get(0)), this.distanceThreshold, this.velocity);
 							this.positions.remove(0);
 						}
 						//is a ship
 						else{
 							if(space.getObjectById(this.positions.get(this.positions.size()-1)).isAlive()){
-								action = Vectoring.advancedMovementVector(space, ship, space.getObjectById(this.positions.get(0)), 10);
+								action = Vectoring.advancedMovementVector(space, ship, space.getObjectById(this.positions.get(0)), 10, this.velocity);
 								if(Combat.willHitMovingTarget(space, ship, space.getObjectById(this.positions.get(this.positions.size() - 1)), space.getObjectById(this.positions.get(this.positions.size() - 1)).getPosition().getTranslationalVelocity())){
 									shouldShoot= true;
 								}
@@ -102,14 +105,14 @@ public class ChaseBot extends TeamClient {
 								GAState newState = new GAState(space,ship);
 								this.positions = newState.returnNextPosition(space,ship);
 								//policy.getCurrentAction(space, ship, newState, 25);
-								action = Vectoring.advancedMovementVector(space, ship, space.getObjectById(this.positions.get(0)), this.distanceThreshold);
+								action = Vectoring.advancedMovementVector(space, ship, space.getObjectById(this.positions.get(0)), this.distanceThreshold, this.velocity);
 							}
 						}
 					}
 					catch(NullPointerException e){
 						GAState newState = new GAState(space,ship);
 						this.positions = newState.returnNextPosition(space, ship);
-						action = Vectoring.advancedMovementVector(space, ship, space.getObjectById(this.positions.get(0)), this.distanceThreshold);
+						action = Vectoring.advancedMovementVector(space, ship, space.getObjectById(this.positions.get(0)), this.distanceThreshold, this.velocity);
 					}
 				}
 
@@ -129,11 +132,18 @@ public class ChaseBot extends TeamClient {
 		steps++;
 		//evaluates 
 		if (steps % evalSteps == 0) {
+			
+			for (AbstractObject actionable :  actionableObjects) {
+				if (actionable instanceof Ship) {
+					Ship ship = (Ship) actionable;
+					// note that this method currently scores every policy as zero as this is part of 
+					// what the student has to do
+					population.evaluateFitnessForCurrentMember(space, ship, this.deltaDeath, this.deltaKill);
+					this.deltaDeath = ship.getKillsReceived();
+					this.deltaKill = ship.getKillsInflicted();
+				}
+			}
 		/*
-			// note that this method currently scores every policy as zero as this is part of 
-			// what the student has to do
-			population.evaluateFitnessForCurrentMember(space);
-
 			// move to the next member of the population
 			currentPolicy = population.getNextMember();
 

@@ -3,6 +3,7 @@ package kann0200;
 import java.util.ArrayList;
 
 import kann0200.GAChromosome;
+import spacesettlers.objects.Ship;
 import spacesettlers.simulator.Toroidal2DPhysics;
 
 /**
@@ -43,8 +44,21 @@ public class GAPopulation {
 	 * 
 	 * @param space
 	 */
-	public void evaluateFitnessForCurrentMember(Toroidal2DPhysics space) {
+	public void evaluateFitnessForCurrentMember(Toroidal2DPhysics space, Ship ship, int deltaDeath, int deltaKill) {
 		fitnessScores[currentPopulationCounter] = 0;
+		int tempScore = 0;
+		if(ship.getEnergy() < 500){
+			if(ship.getEnergy() < 100)
+				tempScore += -10;
+			else
+				tempScore += -3;
+		}
+		else
+			tempScore += 10;
+		tempScore += (ship.getKillsInflicted() - deltaKill) * 3;
+		tempScore += (ship.getKillsReceived() - deltaDeath) * -5;
+		
+		
 	}
 
 	/**
