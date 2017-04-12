@@ -29,9 +29,9 @@ public class GAChromosome {
 		
 		if (!policy.containsKey(currentState)) {
 			if (new Random().nextInt(rand)==0) {
-				policy.put(currentState, Vectoring.advancedMovementVector(space, ship, Combat.nearestBeacon(space, ship), 150));
+				//policy.put(currentState, Vectoring.advancedMovementVector(space, ship, Combat.nearestBeacon(space, ship), 150));
 			} else {
-				policy.put(currentState, Vectoring.advancedMovementVector(space, ship, target, 150));
+				//policy.put(currentState, Vectoring.advancedMovementVector(space, ship, target, 150));
 			}
 		}
 
