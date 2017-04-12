@@ -33,11 +33,10 @@ import spacesettlers.simulator.Toroidal2DPhysics;
 import spacesettlers.utilities.Movement;
 import spacesettlers.utilities.Position;
 /**
- * A* based Agent that only hunts down the nearest enemy
- * It traverses using distance between nodes (mineable asteroids, and beacons)
- * The heuristic function is direct distance to the target
- * It gets a path by seeing if between asteroid is a non mineable asteroid and deletes that edge
- * It gets the shortest path using the Floyd-Warshall all pairs shortest path algorithm
+ * This is a Genetic Algorithm bot to attempt to maximize points using a change in the velocity
+ * modifier in our custom made advancedmovementvector function. it will evaluate every ~2000 steps
+ * and 20 members are in each population. 
+ * 
  * 
  * @author Christopher Bradford & Scott Kannawin
  */
@@ -59,9 +58,10 @@ public class ChaseBot extends TeamClient {
 	private int deltaKill = 0;
 	private double velocity = Movement.MAX_TRANSLATIONAL_ACCELERATION;
 	boolean doneAction = false;
-	private int generation = 0;
 
 	/**
+	 * Determines if it needs to get a new path or not
+	 * 
 	 * 
 	 */
 	public Map<UUID, AbstractAction> getMovementStart(Toroidal2DPhysics space,
@@ -126,6 +126,11 @@ public class ChaseBot extends TeamClient {
 		return actions;
 	}
 	
+	/**
+	 * Will determine if the algorithm needs to evaluate for next generation or not
+	 * 
+	 * 
+	 */
 	@Override
 	public void getMovementEnd(Toroidal2DPhysics space, Set<AbstractActionableObject> actionableObjects) {
 		//TODO GENETIC ALGORITHM END
@@ -136,12 +141,12 @@ public class ChaseBot extends TeamClient {
 			for (AbstractObject actionable :  actionableObjects) {
 				if (actionable instanceof Ship) {
 					Ship ship = (Ship) actionable;
-					// note that this method currently scores every policy as zero as this is part of 
-					// what the student has to do
 					population.evaluateFitnessForCurrentMember(space, ship, this.deltaDeath, this.deltaKill, this.velocity);
+					
+					this.velocity = population.nextVelocity();
 					this.deltaDeath = ship.getKillsReceived();
 					this.deltaKill = ship.getKillsInflicted();
-					this.velocity = population.nextVelocity();
+
 				}
 			}
 		

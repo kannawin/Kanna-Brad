@@ -27,25 +27,22 @@ public class GAState {
 	ArrayList<UUID> path = new ArrayList<UUID>();
 	
 	int lastTimestep = 0;
-	private ArrayList<SpacewarGraphics> graphicsToAdd;
 	
 	//Magic numbers
 	public int EnergyThreshold = 1500;
-	public int PathingFrequency = 25;
-	public boolean Drawing = true;
-	
-	Position previousPosition = null;
-	
-	int sum = 0;
-	int count = 0;
-	int previousTimestep = 0;
-	
-	public GAState(Toroidal2DPhysics space, Ship ship) {
+
+public GAState(Toroidal2DPhysics space, Ship ship) {
 		updateState(space, ship);
 	}
 
 
-
+	/**
+	 * Finds a new target, either an enemy or energy
+	 * using the A* method
+	 * 
+	 * @param space
+	 * @param ship
+	 */
 	public void updateState(Toroidal2DPhysics space, Ship ship) {
 		//Find our target
 		if(!isValidTarget(space, targetID)){

@@ -17,9 +17,13 @@ import spacesettlers.simulator.Toroidal2DPhysics;
 import spacesettlers.utilities.Movement;
 
 /**
- * Stores a whole population of individuals for genetic algorithms / evolutionary computation
  * 
- * @author amy
+ * The genetic algorithm population and evaluation functions are stored here, it attempts to find the ideal
+ * velocity to input into the advanced movement function to the targets give from the GA State. 
+ * 
+ * The chromosomes are also maintained here by storing the current velocity for the last generation
+ * it also prints out the results to each item in the population
+ * 
  *
  */
 public class GAPopulation {
@@ -49,7 +53,8 @@ public class GAPopulation {
 		for (int i = 0; i < populationSize; i++) {
 			population[i] = new GAChromosome();
 		}
-		
+		Random r = new Random();
+		this.velocity = (double) r.nextInt((int)Movement.MAX_TRANSLATIONAL_ACCELERATION * 4);
 		// make space for the fitness scores
 		fitnessScores = new double[populationSize];
 		scores = new double[populationSize];
@@ -57,6 +62,13 @@ public class GAPopulation {
 		currentGenVelocity = new double[populationSize];
 		velocityHolder = new double[populationSize];
 	}
+	
+	/**
+	 * Instantiates the generation from game to game, using the file printed out beforehand, if no file
+	 * is found it starts the algorithm over again and sets each velocity to random doubles
+	 * 
+	 * @param file
+	 */
 	public void setGeneration(String file){
 		this.filename = file;
 		BufferedReader reader;
@@ -65,18 +77,10 @@ public class GAPopulation {
 			fileInstantiator.createNewFile(); 
 			reader = new BufferedReader(new FileReader(file));
 			String temp;
-			if(reader.readLine() == null){
-				//if nothing exists, max it out
-				this.velocity = Movement.MAX_TRANSLATIONAL_ACCELERATION * 5;
-				this.populationNumber = 0;
-			}
-			else{
-				reader.reset();
-				while((temp = reader.readLine()) != null){
-					this.velocity = Double.valueOf(parseVelocity(temp));
-					this.populationNumber++;
-				}
-			}
+			temp = reader.readLine();
+			this.velocity = parseVelocity(temp);
+
+			System.out.println(this.currentPopulationCounter);
 		}
 		//simple catch and release, because the file is guaranteed to exist, else itll get created
 		catch(FileNotFoundException e){
@@ -85,11 +89,33 @@ public class GAPopulation {
 		}
 	}
 	
+	/**
+	 * Used to help read the file and parse the given data, it sets the current population number
+	 * it also sets the generation number and returns the last known velocity
+	 * 
+	 * @param input
+	 * @return
+	 */
 	private double parseVelocity(String input){
-		String[] temp = input.split(",");
-		double temp1 = 0.0;
-		for(int i = 0; i < temp.length;i++){
-			temp1 = Double.valueOf(temp[i]);
+		try{
+			int gen = input.split("||").length;
+			this.populationNumber = gen;
+		}
+		catch(NullPointerException e){
+			this.populationNumber = 1;
+		}
+		double temp1 = 50.0;
+		try{
+			String[] temp = input.split(",");
+			this.currentPopulationCounter = temp.length % this.scores.length;
+			temp1 = 0.0;
+			for(int i = 0; i < temp.length - 1;i++){
+				temp1 = Double.valueOf(temp[i].split("/")[0]);
+				this.currentGenVelocity[i] = temp1;
+			}
+		}
+		catch(NullPointerException e){
+			temp1 = 50.0;
 		}
 		return temp1;
 	}
@@ -100,10 +126,22 @@ public class GAPopulation {
 	public int getGeneration(){
 		return this.currentPopulationCounter;
 	}
+
+	
 	/**
-	 * Currently scores all members as zero (the student must implement this!)
+	 * The fitness evaluation. Everything is positive so finding the probability is just an simple RNG value
+	 * to get probabilistic opportunities for everything
+	 * 
+	 * it firsts determines if it is low on energy at time of evaluation, <500 is unacceptable
+	 * and gives extra points for being above that threshold
+	 * 
+	 * after energy evaluation is done, points are given for kills, less so for deaths
 	 * 
 	 * @param space
+	 * @param ship
+	 * @param deltaDeath
+	 * @param deltaKill
+	 * @param speed
 	 */
 	public void evaluateFitnessForCurrentMember(Toroidal2DPhysics space, Ship ship, int deltaDeath, int deltaKill, double speed) {
 		
@@ -122,13 +160,13 @@ public class GAPopulation {
 		
 		fitnessScores[currentPopulationCounter] = tempScore;
 		currentGenVelocity[currentPopulationCounter] = speed;
-		scores[currentPopulationCounter] = (ship.getDamageInflicted() - ship.getDamageReceived());
-
+		scores[currentPopulationCounter] = (ship.getDamageInflicted() - ship.getDamageReceived()) + ship.getKillsInflicted()*1000 - ship.getKillsReceived()*(-1000);
+		
 		try {
 			FileWriter fw = new FileWriter(this.filename, true);
 			BufferedWriter bw = new BufferedWriter(fw);
 			PrintWriter out = new PrintWriter(bw);
-			out.print(String.valueOf(this.velocity) + "/" + String.valueOf(tempScore) + "/" + String.valueOf(this.scores[currentPopulationCounter]) + ",");
+			out.print(this.velocity + "/" + tempScore + "/" + this.scores[currentPopulationCounter] + ",");
 			out.close();
 		} catch (IOException e) {
 		}
@@ -160,7 +198,11 @@ public class GAPopulation {
 		
 		//return population[currentPopulationCounter % population.length];
 	}
-	
+	/**
+	 * evaluates the net velocity used for calculating the average at the end of a generation
+	 * 
+	 * @return
+	 */
 	private double avgVelocity(){
 		double temp = 0.0;
 		for(int i = 0; i < this.lastGenVelocity.length;i++){
@@ -171,9 +213,15 @@ public class GAPopulation {
 	
 	
 	/**
-	 * Does crossover, selection, and mutation using our current population.
-	 * Note, none of this is implemented as it is up to the student to implement it.
-	 * Right now all it does is reset the counter to the start.
+	 * this will create the next generation and evaluates the next generations velocity numbers
+	 * it will create an array of sum(fitnessScores) length and index appropriately
+	 * it will then use a random number generator to crossover two parents (getting their average velocity)
+	 * and sets it at a point in the velocity array
+	 * 
+	 * this method will lead to asexual members in a generation, but will allow for normalization after
+	 * some generations, because survival of the fittest
+	 * 
+	 * 
 	 */
 	public void makeNextGeneration() {
 		currentPopulationCounter = 0;
@@ -185,7 +233,7 @@ public class GAPopulation {
 			FileWriter fw = new FileWriter(this.filename, true);
 			BufferedWriter bw = new BufferedWriter(fw);
 			PrintWriter out = new PrintWriter(bw);
-			out.print(String.valueOf(avgVelocity()) + "\n");
+			out.print("||" + avgVelocity() + "|" + "\n");
 			out.close();
 		} catch (IOException e) {
 		}
@@ -206,19 +254,44 @@ public class GAPopulation {
 			double p2 = lastGenVelocity[indices[r.nextInt(velocityHolder.length)]];
 			velocityHolder[i] = (p1 + p2)/2;
 		}
+		this.currentGenVelocity = this.velocityHolder;
+		this.populationNumber++;
 	}
 	
+	/**
+	 * This is where mutation is done
+	 * it will randomly generate a new velocity, and is forced into normalization with lower and lower 
+	 * variability between generations (modifier) 
+	 * 
+	 * this will mutate the velocity and force it to generate a random number in the full range (1-200)
+	 * if the fully generated number is outside of the range (0 < n < 250) because its either too slow
+	 * or too fast
+	 * 
+	 * @return
+	 */
 	public double nextVelocity(){
-		if(this.populationNumber != 0){
-			return this.velocityHolder[this.currentPopulationCounter];
+		Random r = new Random();
+		try{
+			this.velocity = this.currentGenVelocity[this.currentPopulationCounter] * r.nextDouble() * 2;
+			if(this.velocity <=1 ){
+				this.velocity = r.nextDouble() * Movement.MAX_TRANSLATIONAL_ACCELERATION * 4;
+			}
 		}
-		else{
-			Random r = new Random();
-			double velocity = Movement.MAX_TRANSLATIONAL_ACCELERATION*4*r.nextDouble();
-			this.currentGenVelocity[this.currentPopulationCounter] = velocity;
-			return velocity;
+		catch(NullPointerException e){
+			this.velocity = r.nextDouble() * Movement.MAX_TRANSLATIONAL_ACCELERATION * 4;
+		}
+		this.currentGenVelocity[this.currentPopulationCounter] = this.velocity;
+		double modifier = (Math.pow(.95, this.populationNumber));
+		modifier = r.nextBoolean() ? modifier * -1 : modifier;
+		this.velocity += this.velocity * modifier;
+		if(this.velocity <= 0 && this.populationNumber > 5 || this.velocity > 250){
+			this.velocity = r.nextDouble() * Movement.MAX_TRANSLATIONAL_ACCELERATION * 4;
 		}
 		
+		
+		System.out.println(this.velocity);
+		this.currentGenVelocity[this.currentPopulationCounter] = velocity;
+		return velocity;	
 	}
 	
 	/**
