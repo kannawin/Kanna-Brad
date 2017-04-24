@@ -161,21 +161,6 @@
 		</java>
 	</target>
 
-	<target name="empty" depends="jar-spacesettlers">
-		<java classname="spacesettlers.simulator.RunSimulator"
-		      fork="true" 
-		      dir="src"
-			  classpath="${dist}/spacesettlers.jar">
-			<jvmarg	value="-Xmx10G" />
-			<arg line="--graphics true "/>
-			<arg line="--configPath ../config/heuristicCompetitive/"/>
-			<arg line="--simulatorConfigFile SpaceSettlersConfig_Empty.xml"/>
-			<classpath>
-				<pathelement location="${dist}/spacesettlers.jar"/>
-			</classpath>
-		</java>
-	</target>
-
 	
 	<target name="doc" depends="init">
 	    <javadoc destdir="docs/api"

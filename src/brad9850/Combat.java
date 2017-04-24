@@ -264,7 +264,7 @@ public class Combat {
 		Position missilePosition = simulateMissile(ship);
 		
 		double timeUntilCollision = timeUntilCollision(space, missilePosition, Missile.MISSILE_RADIUS, missilePosition.getTranslationalVelocity(),
-				target.getPosition(), target.getRadius(), targetEstimatedVelocity);
+				space.getObjectById(target.getId()).getPosition(), target.getRadius(), targetEstimatedVelocity);
 
 		if(timeUntilCollision >= 0){
 			return true;

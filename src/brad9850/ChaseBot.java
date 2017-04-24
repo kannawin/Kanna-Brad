@@ -1,20 +1,26 @@
 package brad9850;
 
+import java.awt.Color;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.Map;
+import java.util.Queue;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
 
 import spacesettlers.actions.AbstractAction;
 import spacesettlers.actions.DoNothingAction;
+import spacesettlers.actions.MoveAction;
 import spacesettlers.actions.MoveToObjectAction;
 import spacesettlers.actions.PurchaseCosts;
 import spacesettlers.actions.PurchaseTypes;
 import spacesettlers.clients.TeamClient;
+import spacesettlers.graphics.LineGraphics;
 import spacesettlers.graphics.SpacewarGraphics;
+import spacesettlers.graphics.StarGraphics;
 import spacesettlers.objects.AbstractActionableObject;
 import spacesettlers.objects.AbstractObject;
 import spacesettlers.objects.Ship;
@@ -25,20 +31,41 @@ import spacesettlers.simulator.Toroidal2DPhysics;
 import spacesettlers.utilities.Movement;
 import spacesettlers.utilities.Position;
 /**
- * Reflex-based Agent that prioritizes defending its base, destroying other bases, and hunting down ships, in that order
+ * A* based Agent that only hunts down the nearest enemy
+ * It traverses using distance between nodes (mineable asteroids, and beacons)
+ * The heuristic function is direct distance to the target
+ * It gets a path by seeing if between asteroid is a non mineable asteroid and deletes that edge
+ * 
  * @author Christopher Bradford & Scott Kannawin
  */
 public class ChaseBot extends TeamClient {
 	boolean shouldShoot = false;
-	boolean boost = false;
-
+	
+	UUID targetID = null;
+	ArrayList<UUID> path = new ArrayList<UUID>();
+	
+	int lastTimestep = 0;
+	private ArrayList<SpacewarGraphics> graphicsToAdd;
+	
+	//Magic numbers
+	public final int EnergyThreshold = 1500;
+	public final int PathingFrequency = 25;
+	public final boolean Drawing = true;
+	
+	Position previousPosition = null;
+	
+	int sum = 0;
+	int count = 0;
+	int previousTimestep = 0;
+	
+	
 	/**
 	 * 
 	 */
 	public Map<UUID, AbstractAction> getMovementStart(Toroidal2DPhysics space,
 			Set<AbstractActionableObject> actionableObjects) {
 		HashMap<UUID, AbstractAction> actions = new HashMap<UUID, AbstractAction>();
-
+		graphicsToAdd = new ArrayList<SpacewarGraphics>();
 		// loop through each ship
 		for (AbstractObject actionable :  actionableObjects) {
 			if (actionable instanceof Ship) {
@@ -62,46 +89,124 @@ public class ChaseBot extends TeamClient {
 	 * @return
 	 */
 	private AbstractAction getAction(Toroidal2DPhysics space, Ship ship) {
-		AbstractAction current = ship.getCurrentAction();
-		Position currentPosition = ship.getPosition();
-		
-		//ship.getPosition().setAngularVelocity(Movement.MAX_ANGULAR_ACCELERATION);
 		//nullify from previous action
 		ship.setCurrentAction(null);
 		
-		AbstractAction newAction = null;
+		AbstractAction newAction = new DoNothingAction();
 		
-		//find the traitor shooting the base, if there is one, else get the next target
-		AbstractObject traitor = Combat.getEnemyNearBase(space, ship);
-		AbstractObject nextTarget = Combat.findNearestEnemyBase(space,ship);
-		AbstractObject nearestEnemy = Combat.nearestEnemy(space, ship);
-
+		//Find our target
+		if(!isValidTarget(space, targetID)){
+			targetID = findTarget(space, ship);
+		}
+		AbstractObject target = space.getObjectById(targetID);
 		
-		//Don't want to shoot beacons when searching for them
-		shouldShoot = false;
-		if(ship.getEnergy() > 1750){
-
-			if(traitor != null){
-				if(Combat.isAimingAtTarget(space, ship, traitor))
-					shouldShoot = true;
-				newAction = Vectoring.advancedMovementVector( space, ship, traitor, 200);
+		//Find a place to move to.
+		AbstractObject movementGoal = target;
+		//If we're low on energy, look for a beacon close by
+		if(ship.getEnergy() < EnergyThreshold){
+			movementGoal = Combat.nearestBeacon(space, ship);
+		}
+		
+		//If it's time to generate a new path, do it
+		if(space.getCurrentTimestep() - this.lastTimestep > PathingFrequency
+				|| this.path.size() == 0
+				|| this.path.get(this.path.size() - 1) != movementGoal.getId() ){
+			this.lastTimestep = space.getCurrentTimestep();
+			this.path = Pathing.findPath(space, ship, movementGoal);
+		}
+				
+		//Get a waypoint to move to
+		//If we're already really close to it, find the next target
+		AbstractObject waypoint = space.getObjectById(this.path.get(0));
+		while(waypoint != null && space.findShortestDistance(ship.getPosition(), waypoint.getPosition()) < ship.getRadius() + waypoint.getRadius()){
+			this.path.remove(0);
+			waypoint = null;
+			if(this.path.size() > 0){
+				waypoint = space.getObjectById(this.path.get(0));
 			}
-			else if (nextTarget != null){ 
-				if(Combat.isAimingAtTarget(space, ship, nextTarget))
-					shouldShoot = true;
-				newAction = Vectoring.advancedMovementVector(space,ship,nextTarget, 200);	
-			}
-			else if (nearestEnemy != null){
-				if(Combat.willHitMovingTarget(space, ship, nearestEnemy, nearestEnemy.getPosition().getTranslationalVelocity())){
-					shouldShoot = true;
-				}
-				newAction = Vectoring.advancedMovementVector(space,ship,nearestEnemy, 200);
-			}
+		}
+		
+		//If we have no other waypoint, aim at our target
+		if(waypoint == null){
+			waypoint = target;
+		}
+		
+		//Get the movement to our waypoint
+		int distanceFactor = 150;
+		newAction = Vectoring.advancedMovementVector(space, ship, waypoint, distanceFactor);
+		
+		
+		//Decide if we should shoot		
+		if(Combat.willMakeItToTarget(space, ship, target, target.getPosition().getTranslationalVelocity())){
+			shouldShoot= true;
 		}
 		else{
-			newAction = Vectoring.advancedMovementVector(space, ship, Combat.nearestBeacon(space, ship), 150);
+			shouldShoot = false;
 		}
+		
+		if(Drawing){
+			drawPath(space, ship);
+		}
+		
 		return newAction;
+	}
+	
+	/**
+	 * Get a target to hunt
+	 * @param space
+	 * @param ship
+	 * @return
+	 */
+	private UUID findTarget(Toroidal2DPhysics space, Ship ship){
+		return Combat.nearestEnemy(space, ship).getId();
+	}
+	
+	/**
+	 * See if we should still chase our current target
+	 * @param space
+	 * @param targetID
+	 * @return
+	 */
+	private boolean isValidTarget(Toroidal2DPhysics space, UUID targetID){
+		return (targetID != null
+				&& space.getObjectById(targetID) != null
+				&& space.getObjectById(targetID).isAlive());
+	}
+	
+	/**
+	 * Draw a line directly connecting the ship and its target, and a bunch of lines connecting the path nodes between the two
+	 * @param space
+	 * @param ship
+	 */
+	private void drawPath(Toroidal2DPhysics space, Ship ship){
+		//Don't try to draw a path that doesn't exist
+		if(path.size() == 0){
+			return;
+		}
+		
+		Position shipPosition = ship.getPosition();
+		Position targetPosition = space.getObjectById(this.path.get(this.path.size() - 1)).getPosition();
+		
+		LineGraphics targetLine = new LineGraphics(shipPosition, targetPosition, space.findShortestDistanceVector(shipPosition, targetPosition));
+		targetLine.setLineColor(Color.RED);
+		graphicsToAdd.add(targetLine);
+		
+		for(int i = 0; i < path.size(); i++){
+			//TODO: Solve root cause of this, and of all evil
+			if(space.getObjectById(path.get(i)) == null){
+				break;
+			}
+			Position thisPosition = space.getObjectById(path.get(i)).getPosition();
+			Position previousPosition = ship.getPosition();
+			if(i > 0){
+				previousPosition = space.getObjectById(path.get(i - 1)).getPosition();
+			}
+			
+			graphicsToAdd.add(new StarGraphics(3, Color.WHITE, thisPosition));
+			LineGraphics line = new LineGraphics(previousPosition, thisPosition, space.findShortestDistanceVector(previousPosition, thisPosition));
+			line.setLineColor(Color.WHITE);
+			graphicsToAdd.add(line);
+		}
 	}
 	
 	
@@ -123,8 +228,10 @@ public class ChaseBot extends TeamClient {
 
 	@Override
 	public Set<SpacewarGraphics> getGraphics() {
-		// TODO Auto-generated method stub
-		return null;
+		HashSet<SpacewarGraphics> graphics = new HashSet<SpacewarGraphics>();
+		graphics.addAll(graphicsToAdd);
+		graphicsToAdd.clear();
+		return graphics;
 	}
 
 	@Override
