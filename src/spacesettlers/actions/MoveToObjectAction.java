@@ -3,6 +3,7 @@ package spacesettlers.actions;
 import spacesettlers.objects.AbstractObject;
 import spacesettlers.simulator.Toroidal2DPhysics;
 import spacesettlers.utilities.Position;
+import spacesettlers.utilities.Vector2D;
 
 /**
  * Calls MoveAction for the actual movements but allows you to aim for a spacewar object
@@ -11,8 +12,8 @@ import spacesettlers.utilities.Position;
  * @author amy
  */
 public class MoveToObjectAction extends MoveAction {
-	AbstractObject goalObject;
-	Position originalGoalLocation;
+	protected AbstractObject goalObject;
+	protected Position originalGoalLocation;
 	
 	/**
 	 * Initialize with your location and the goal object 
@@ -26,7 +27,21 @@ public class MoveToObjectAction extends MoveAction {
 		this.goalObject = goalObject;
 		this.originalGoalLocation = goalObject.getPosition().deepCopy();
 	}
-	
+
+	/**
+	 * Initialize with your location and the goal object 
+	 * 
+	 * @param space
+	 * @param currentLocation
+	 * @param goalObject
+	 */
+	public MoveToObjectAction(Toroidal2DPhysics space, Position currentLocation, AbstractObject goalObject, 
+			Vector2D goalVelocity) {
+		super(space, currentLocation, goalObject.getPosition(), goalVelocity);
+		this.goalObject = goalObject;
+		this.originalGoalLocation = goalObject.getPosition().deepCopy();
+	}
+
 	/**
 	 * Return the goal object (and remember it is a clone so use its UUID!)
 	 * @return
@@ -44,6 +59,7 @@ public class MoveToObjectAction extends MoveAction {
 	 */
 	public boolean isMovementFinished(Toroidal2DPhysics space) {
 		if (super.isMovementFinished(space)) {
+			//System.out.println("Super movement finished");
 			return true;
 		}
 		
@@ -51,16 +67,19 @@ public class MoveToObjectAction extends MoveAction {
 		
 		// goal object disappeared
 		if (newGoalObj == null) {
+			//System.out.println("Goal object disappeared");
 			return true;
 		}
 		
 		// goal object died
 		if (!newGoalObj.isAlive()) {
+			//System.out.println("Goal object dead");
 			return true;
 		} 
 
 		// goal object moved
 		if (!newGoalObj.getPosition().equalsLocationOnly(originalGoalLocation)) {
+			//System.out.println("Goal object moved");
 			return true;
 		}
 		
