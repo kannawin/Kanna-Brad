@@ -61,7 +61,7 @@ public class CaptureBot extends TeamClient {
 	int count = 0;
 	int previousTimestep = 0;
 	
-	
+	UUID currentShip = null;
 	/**
 	 * 
 	 */
@@ -74,7 +74,16 @@ public class CaptureBot extends TeamClient {
 			if (actionable instanceof Ship) {
 				Ship ship = (Ship) actionable;
 				
+				UUID tempShip = ship.getId();
+				if(tempShip != currentShip){
+					currentShip = tempShip;
+					System.out.println(currentShip);
+				}
+				
+
 				AbstractAction action = getAction(space, ship);
+				
+				//AbstractAction action = new DoNothingAction();
 				actions.put(ship.getId(), action);
 				
 			} else {
@@ -100,23 +109,7 @@ public class CaptureBot extends TeamClient {
 		//Find a default place to move to.
 		AbstractObject movementGoal = Combat.nearestBeacon(space, ship);
 		
-		//Go to either the flag or the base
-		if(ship.isCarryingFlag()){
-			//If we're carrying the flag, return to base
-			for(Base base : space.getBases()){
-				if(base.getTeamName().equalsIgnoreCase(ship.getTeamName())){
-					movementGoal = base;
-				}
-			}
-		}	
-		else{
-			//If we're not carrying the flag, hunt it down
-			for(Flag flag : space.getFlags()){
-				if(!flag.getTeamName().equalsIgnoreCase(ship.getTeamName())){
-					movementGoal = flag;
-				}
-			}
-		}
+
 		
 //		//If we're low on energy, look for a beacon close by
 //		if(ship.getEnergy() < EnergyThreshold){
@@ -128,8 +121,29 @@ public class CaptureBot extends TeamClient {
 		if(space.getCurrentTimestep() - this.lastTimestep > PathingFrequency
 				|| this.path.size() == 0
 				|| previousMovementTargetUUID != movementGoal.getId() ){
+			
+			//Go to either the flag or the base
+			if(ship.isCarryingFlag()){
+				//If we're carrying the flag, return to base
+				for(Base base : space.getBases()){
+					if(base.getTeamName().equalsIgnoreCase(ship.getTeamName())){
+						movementGoal = base;
+					}
+				}
+			}	
+			else{
+				//If we're not carrying the flag, hunt it down
+				for(Flag flag : space.getFlags()){
+					if(!flag.getTeamName().equalsIgnoreCase(ship.getTeamName())){
+						movementGoal = flag;
+					}
+				}
+			}
+			
+			
 			this.lastTimestep = space.getCurrentTimestep();
 			this.path = Pathing.findPath(space, ship, movementGoal);
+			
 		}
 				
 		//Get a waypoint to move to
@@ -143,10 +157,10 @@ public class CaptureBot extends TeamClient {
 			}
 		}
 		
-//		//If we have no other waypoint, aim at our target
-//		if(waypoint == null){
-//			waypoint = target.getPosition();
-//		}
+		//If we have no other waypoint, aim at our target
+		if(waypoint == null){
+			waypoint = movementGoal.getPosition();
+		}
 		
 		//Get the movement to our waypoint
 		int distanceFactor = 150;
