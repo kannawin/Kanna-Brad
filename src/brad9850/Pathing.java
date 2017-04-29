@@ -39,12 +39,11 @@ public class Pathing {
 	 * @param ship
 	 * @return
 	 */
-	public static ArrayList<UUID> findPath(Toroidal2DPhysics space, Ship ship, AbstractObject target) {
-		ArrayList<UUID> nodeList = makeNodes(space, ship, target);
+	public static ArrayList<Position> findPath(Toroidal2DPhysics space, Ship ship, AbstractObject target) {
+		ArrayList<Position> nodeList = makeNodes(space, ship, target);
 		double[][] distanceMatrix = distanceBetweenNodes(space, nodeList);
 
 		int[] parentNode = path_AStar(space, nodeList, distanceMatrix);
-//		int[] parentNode = path_GBFS(space, nodeList, distanceMatrix);
 
 		ArrayList<Integer> reversePath = new ArrayList<Integer>();
 		// Start at the goal, and walk backward to the start
@@ -57,7 +56,7 @@ public class Pathing {
 		}
 
 		// Now turn the reverse path into a series of positions for our ship
-		ArrayList<UUID> path = new ArrayList<UUID>();
+		ArrayList<Position> path = new ArrayList<Position>();
 		for (int i = reversePath.size() - 1; i >= 0; i--) {
 			int nodeIndex = reversePath.get(i);
 			path.add(nodeList.get(nodeIndex));
@@ -74,14 +73,14 @@ public class Pathing {
 	 * @param distanceMatrix
 	 * @return
 	 */
-	public static int[] path_GBFS(Toroidal2DPhysics space, ArrayList<UUID> nodeList, double[][] distanceMatrix) {
+	public static int[] path_GBFS(Toroidal2DPhysics space, ArrayList<Position> nodeList, double[][] distanceMatrix) {
 		int nodeCount = nodeList.size();
 		int startIndex = 0;
 		int goalIndex = 1;
 
-		UUID goalID = nodeList.get(goalIndex);
+		Position goalPosition = nodeList.get(goalIndex);
 
-		double[] heuristicList = getHeuristicValues(space, nodeList, goalID);
+		double[] heuristicList = getHeuristicValues(space, nodeList, goalPosition);
 
 		int[] parentNode = new int[nodeCount];
 
@@ -145,14 +144,14 @@ public class Pathing {
 	 * @param distanceMatrix
 	 * @return
 	 */
-	public static int[] path_AStar(Toroidal2DPhysics space, ArrayList<UUID> nodeList, double[][] distanceMatrix) {
+	public static int[] path_AStar(Toroidal2DPhysics space, ArrayList<Position> nodeList, double[][] distanceMatrix) {
 		int nodeCount = nodeList.size();
 		int startIndex = 0;
 		int goalIndex = 1;
 
-		UUID goalID = nodeList.get(goalIndex);
+		Position goalPosition = nodeList.get(goalIndex);
 
-		double[] heuristicList = getHeuristicValues(space, nodeList, goalID);
+		double[] heuristicList = getHeuristicValues(space, nodeList, goalPosition);
 		double[] pathCostList = new double[nodeCount];
 
 		int[] parentNode = new int[nodeCount];
@@ -254,22 +253,22 @@ public class Pathing {
 	 * @param target
 	 * @return
 	 */
-	public static ArrayList<UUID> makeNodes(Toroidal2DPhysics space, Ship ship, AbstractObject target) {
-		ArrayList<UUID> nodeList = new ArrayList<UUID>();
+	public static ArrayList<Position> makeNodes(Toroidal2DPhysics space, Ship ship, AbstractObject target) {
+		ArrayList<Position> nodeList = new ArrayList<Position>();
 		// If this is changed, be sure to always add ship first and target
 		// second.
 
 		// Add start and goal
-		nodeList.add(ship.getId());
-		nodeList.add(target.getId());
+		nodeList.add(ship.getPosition());
+		nodeList.add(target.getPosition());
 
 		// Add beacons and mineable asteroids
 		for (Beacon energy : space.getBeacons()) {
-			nodeList.add(energy.getId());
+			nodeList.add(energy.getPosition());
 		}
 		for (Asteroid mine : space.getAsteroids()) {
 			if (mine.isMineable()) {
-				nodeList.add(mine.getId());
+				nodeList.add(mine.getPosition());
 			}
 		}
 
@@ -284,7 +283,7 @@ public class Pathing {
 	 * @param next
 	 * @return
 	 */
-	public static double[][] distanceBetweenNodes(Toroidal2DPhysics space, ArrayList<UUID> nodes) {
+	public static double[][] distanceBetweenNodes(Toroidal2DPhysics space, ArrayList<Position> nodes) {
 		int numNodes = nodes.size();
 
 		// Initialize distance matrix
@@ -301,14 +300,13 @@ public class Pathing {
 		for (int i = 0; i < nodes.size() - 1; i++) {
 			// Start at i + 1 so we don't check the same pair of nodes twice
 			for (int j = i + 1; j < nodes.size(); j++) {
-				AbstractObject firstNode = space.getObjectById(nodes.get(i));
-				AbstractObject secondNode = space.getObjectById(nodes.get(j));
+				Position firstNodePosition = nodes.get(i);
+				Position secondNodePosition = nodes.get(j);
+				
+				int freeRadius = (int) (Ship.SHIP_RADIUS * 1.1);
 
-				int freeRadius = (int) (firstNode.getRadius() * 1.1);
-
-				if (space.isPathClearOfObstructions(firstNode.getPosition(), secondNode.getPosition(), obstructions,
-						freeRadius)) {
-					double distance = space.findShortestDistance(firstNode.getPosition(), secondNode.getPosition());
+				if (space.isPathClearOfObstructions(firstNodePosition, secondNodePosition, obstructions, freeRadius)) {
+					double distance = space.findShortestDistance(firstNodePosition, secondNodePosition);
 					distanceMatrix[i][j] = distance;
 					distanceMatrix[j][i] = distance;
 				}
@@ -326,14 +324,13 @@ public class Pathing {
 	 * @param goalID
 	 * @return
 	 */
-	public static double[] getHeuristicValues(Toroidal2DPhysics space, ArrayList<UUID> nodes, UUID goalID) {
+	public static double[] getHeuristicValues(Toroidal2DPhysics space, ArrayList<Position> nodes, Position goalPosition) {
 		int numNodes = nodes.size();
-		Position goalPosition = space.getObjectById(goalID).getPosition();
 
 		double[] heuristicList = new double[numNodes];
 
 		for (int i = 0; i < numNodes; i++) {
-			Position currentNodePosition = space.getObjectById(nodes.get(i)).getPosition();
+			Position currentNodePosition = nodes.get(i);
 			heuristicList[i] = space.findShortestDistance(goalPosition, currentNodePosition);
 		}
 
@@ -358,7 +355,10 @@ public class Pathing {
 			obstructions.add(block);
 		}
 
-		// Don't worry about pathing around other ships & bullets yet
+		// Don't worry about pathing around other ships & bullets
+//		for (Ship ship : space.getShips()){
+//			obstructions.add(ship);
+//		}
 
 		return obstructions;
 	}

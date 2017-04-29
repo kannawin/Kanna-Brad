@@ -254,17 +254,29 @@ public class Combat {
 	
 	/**
 	 * See if shooting now will let us hit a moving target, assuming no obstructions
-	 * @param space
-	 * @param ship
-	 * @param target
-	 * @param targetEstimatedVelocity
+	 * @return
+	 */
+	public static boolean willHitMovingTarget(Toroidal2DPhysics space, Ship ship, Position targetPosition, Vector2D targetEstimatedVelocity){
+		return willHitMovingTarget(space, ship, targetPosition, ship.getRadius(), targetEstimatedVelocity);
+	}
+	
+	/**
+	 * See if shooting now will let us hit a moving target, assuming no obstructions
 	 * @return
 	 */
 	public static boolean willHitMovingTarget(Toroidal2DPhysics space, Ship ship, AbstractObject target, Vector2D targetEstimatedVelocity){
+		return willHitMovingTarget(space, ship, target.getPosition(), target.getRadius(), targetEstimatedVelocity);
+	}
+	
+	/**
+	 * See if shooting now will let us hit a moving target, assuming no obstructions
+	 * @return
+	 */
+	public static boolean willHitMovingTarget(Toroidal2DPhysics space, Ship ship, Position targetPosition, double targetRadius, Vector2D targetEstimatedVelocity){
 		Position missilePosition = simulateMissile(ship);
 		
 		double timeUntilCollision = timeUntilCollision(space, missilePosition, Missile.MISSILE_RADIUS, missilePosition.getTranslationalVelocity(),
-				space.getObjectById(target.getId()).getPosition(), target.getRadius(), targetEstimatedVelocity);
+				targetPosition, targetRadius, targetEstimatedVelocity);
 
 		if(timeUntilCollision >= 0){
 			return true;
