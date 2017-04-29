@@ -2,6 +2,7 @@ package brad9850;
 
 import java.awt.List;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Queue;
@@ -262,15 +263,8 @@ public class Pathing {
 		nodeList.add(ship.getPosition());
 		nodeList.add(target.getPosition());
 
-		// Add beacons and mineable asteroids
-		for (Beacon energy : space.getBeacons()) {
-			nodeList.add(energy.getPosition());
-		}
-		for (Asteroid mine : space.getAsteroids()) {
-			if (mine.isMineable()) {
-				nodeList.add(mine.getPosition());
-			}
-		}
+		//Add pre-made nodes
+		nodeList.addAll(getCTFNodes());
 
 		return nodeList;
 	}
@@ -361,5 +355,71 @@ public class Pathing {
 //		}
 
 		return obstructions;
+	}
+	
+	public static ArrayList<Position> getCTFNodes(){
+		return new ArrayList<>(Arrays.asList(new Position(840, 218),
+											new Position(842, 123),
+											new Position(803, 154),
+											new Position(804, 96),
+											new Position(874, 72),
+											new Position(895, 19),
+											new Position(1459, 8),
+											new Position(1493, 91),
+											new Position(1596, 128),
+											new Position(1593, 448),
+											new Position(1517, 473),
+											new Position(1475, 540),
+											new Position(1528, 621),
+											new Position(1592, 655),
+											new Position(1592, 954),
+											new Position(1503, 980),
+											new Position(71, 971),
+											new Position(127, 10),
+											new Position(97, 93),
+											new Position(6, 123),
+											new Position(722, 70),
+											new Position(682, 10),
+											new Position(798, 982),
+											new Position(880, 1003),
+											new Position(719, 1005),
+											new Position(757, 216),
+											new Position(753, 122),
+											new Position(948, 539),
+											new Position(652, 540),
+											new Position(833, 882),
+											new Position(833, 950),
+											new Position(793, 920),
+											new Position(757, 874),
+											new Position(752, 954),
+											new Position(1255, 250),
+											new Position(1250, 808),
+											new Position(1367, 703),
+											new Position(1353, 898),
+											new Position(1367, 150),
+											new Position(1368, 361),
+											new Position(1219, 537),
+											new Position(1008, 323),
+											new Position(1092, 71),
+											new Position(1354, 66),
+											new Position(1005, 807),
+											new Position(1099, 977),
+											new Position(1331, 993),
+											new Position(583, 320),
+											new Position(575, 794),
+											new Position(488, 71),
+											new Position(263, 66),
+											new Position(220, 141),
+											new Position(217, 350),
+											new Position(341, 248),
+											new Position(363, 534),
+											new Position(229, 695),
+											new Position(237, 903),
+											new Position(329, 801),
+											new Position(267, 983),
+											new Position(496, 991),
+											new Position(112, 538),
+											new Position(68, 449),
+											new Position(64, 630)));
 	}
 }

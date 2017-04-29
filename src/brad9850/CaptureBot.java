@@ -23,6 +23,7 @@ import spacesettlers.graphics.SpacewarGraphics;
 import spacesettlers.graphics.StarGraphics;
 import spacesettlers.objects.AbstractActionableObject;
 import spacesettlers.objects.AbstractObject;
+import spacesettlers.objects.Base;
 import spacesettlers.objects.Ship;
 import spacesettlers.objects.powerups.SpaceSettlersPowerupEnum;
 import spacesettlers.objects.resources.ResourcePile;
@@ -94,6 +95,15 @@ public class CaptureBot extends TeamClient {
 		ship.setCurrentAction(null);
 		
 		AbstractAction newAction = new DoNothingAction();
+		
+//		if(ship.isCarryingFlag()){
+//			//If we're carrying the flag, return to base
+//			for(Base base : space.getBases()){
+//				if(base.getTeamName().equalsIgnoreCase(ship.getTeamName())){
+//					
+//				}
+//			}
+//		}
 		
 		//Find our target
 		if(!isValidTarget(space, targetID)){
