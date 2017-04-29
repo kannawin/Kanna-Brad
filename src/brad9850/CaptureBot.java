@@ -55,6 +55,7 @@ public class CaptureBot extends TeamClient {
 	int count = 0;
 	int previousTimestep = 0;
 	
+	ArrayList<UUID> ships = new ArrayList<UUID>();
 	UUID currentShip = null;
 	/**
 	 * 
@@ -69,11 +70,10 @@ public class CaptureBot extends TeamClient {
 				Ship ship = (Ship) actionable;
 				
 				UUID tempShip = ship.getId();
-				if(tempShip != currentShip){
-					currentShip = tempShip;
-					System.out.println(currentShip);
+				if (tempShip != this.currentShip){
+					System.out.println(tempShip);
+					this.currentShip = tempShip;
 				}
-				
 
 				AbstractAction action = getAction(space, ship);
 				

@@ -1,0 +1,156 @@
+package brad9850;
+
+import java.util.ArrayList;
+import java.util.UUID;
+
+import spacesettlers.objects.AbstractObject;
+import spacesettlers.objects.Asteroid;
+import spacesettlers.objects.Base;
+import spacesettlers.objects.Flag;
+import spacesettlers.objects.Ship;
+import spacesettlers.simulator.Toroidal2DPhysics;
+
+public class Actions {
+	public static AbstractObject[] getActions(Toroidal2DPhysics space, ArrayList<UUID> ships){
+		AbstractObject[] actionList = new AbstractObject[ships.size()];
+		
+		for(int i = 0; i<ships.size();i++){
+			Ship ship = (Ship) space.getObjectById(ships.get(i));
+			switch(i){
+			case 0: //flag bearer 
+				actionList[i] = flagBearer(space,ship);
+				break;	
+			case 1: //defender #1
+				actionList[i] = defender(space,ship);
+				break;
+			case 2: //resource gatherer #1
+				actionList[i] = gatherer(space,ship,null);
+				break;
+			case 3: //harasser
+				actionList[i] = Combat.nearestEnemy(space, ship);
+				break;
+			case 4: //resource gatherer #2
+				actionList[i] = gatherer(space,ship,actionList[2]);
+				break;
+			case 5: //defender #2
+				actionList[i] = defender(space,ship);
+				break;
+			}
+		}
+		
+		
+		return actionList;
+	}
+	
+	//Figures the location for the flag, or return base of the ship if it has the flag
+	public static AbstractObject flagBearer(Toroidal2DPhysics space, Ship ship){
+		//Find a default place to move to.
+		AbstractObject movementGoal = Combat.nearestBeacon(space, ship);
+		
+		double baseDistance = Double.MAX_VALUE;
+		
+		//Go to either the flag or the base
+		if(ship.isCarryingFlag()){
+			//If we're carrying the flag, return to base
+			for(Base base : space.getBases()){
+				if(base.getTeamName().equalsIgnoreCase(ship.getTeamName())
+						&& space.findShortestDistance(base.getPosition(), ship.getPosition()) < baseDistance){
+					baseDistance = space.findShortestDistance(base.getPosition(), ship.getPosition());
+					movementGoal = base;
+				}
+			}
+		}	
+		else{
+			//If we're not carrying the flag, hunt it down
+			for(Flag flag : space.getFlags()){
+				if(!flag.getTeamName().equalsIgnoreCase(ship.getTeamName())){
+					movementGoal = flag;
+				}
+			}
+		}
+		return movementGoal;
+	}
+	
+	//will return the shortest target to the ship on our half of the map
+	//all defenders can attack the same target as there will be no conflicts
+	public static AbstractObject defender(Toroidal2DPhysics space, Ship ship){
+		int halfMin = 0;
+		int halfMax = space.getWidth() / 2;
+		AbstractObject returnTarget = null;
+		double shortestDistance = Double.MAX_VALUE;
+		
+		//need to find which half of the map our base is on
+		for(Base base : space.getBases()){
+			if(base.getTeamName().equalsIgnoreCase(ship.getTeamName())){
+				if(base.getPosition().getX() > halfMax && base.isHomeBase()){
+					halfMin = space.getWidth() / 2;
+					halfMax = space.getWidth();
+				}
+			}
+		}
+		
+		//collect possible targets
+		ArrayList<AbstractObject> targetList = new ArrayList<AbstractObject>();
+		//get bases on our half
+		for(Base enemy : space.getBases()){
+			if(enemy.getTeamName().equalsIgnoreCase(ship.getTeamName()) == false
+					&& enemy.getPosition().getX() > halfMin
+					&& enemy.getPosition().getX() < halfMax){
+				targetList.add(enemy);
+			}
+		}
+		//get ships on our half
+		for(Ship enemy : space.getShips()){
+			if(enemy.getTeamName().equalsIgnoreCase(ship.getTeamName()) == false
+					&& enemy.getPosition().getX() > halfMin
+					&& enemy.getPosition().getX() < halfMax){
+				targetList.add(enemy);
+			}
+		}
+		//determine shortest enemy
+		for(AbstractObject enemy : targetList){
+			if(space.findShortestDistance(enemy.getPosition(), ship.getPosition()) < shortestDistance){
+				shortestDistance = space.findShortestDistance(enemy.getPosition(), ship.getPosition());
+				returnTarget = enemy;
+			}
+		}
+		//if there is nothing on our half, go for a resource
+		if(returnTarget == null){
+			returnTarget = gatherer(space,ship,null);
+		}
+			
+		return returnTarget;
+	}
+	
+	//determines for a gatherer ship to get a resource closest to the base
+	public static AbstractObject gatherer(Toroidal2DPhysics space, Ship ship, AbstractObject otherTarget){
+		AbstractObject movementGoal = null;
+		double shortDistance = Double.MAX_VALUE;
+		
+		//get the base closest to the ship
+		for(Base base : space.getBases()){
+			if(base.getTeamName().equalsIgnoreCase(ship.getTeamName())
+					&& space.findShortestDistance(base.getPosition(), ship.getPosition()) < shortDistance){
+				shortDistance = space.findShortestDistance(base.getPosition(), ship.getPosition());
+				movementGoal = base;
+			}
+		}
+		
+		//if total number of resources is less than 500, go for a mineable asteroid
+		if(ship.getResources().getTotal() < 500){
+			shortDistance = Double.MAX_VALUE;
+			for(Asteroid asteroid : space.getAsteroids()){
+				if(asteroid.isMineable() 
+						&& space.findShortestDistance(asteroid.getPosition(), ship.getPosition()) < shortDistance
+						&& space.getObjectById(otherTarget.getId()).getPosition() != asteroid.getPosition()){
+					shortDistance = space.findShortestDistance(asteroid.getPosition(), ship.getPosition());
+					movementGoal = asteroid;
+				}
+			}
+		}
+		
+		return movementGoal;
+	}
+}
+
+
