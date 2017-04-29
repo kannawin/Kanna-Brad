@@ -55,7 +55,7 @@ public class CaptureBot extends TeamClient {
 	public final boolean Drawing = true;
 	
 	Position previousPosition = null;
-	UUID previousMovementTargetUUID = null;
+	Position previousMovementTargetPosition = null;
 	
 	int sum = 0;
 	int count = 0;
@@ -99,6 +99,7 @@ public class CaptureBot extends TeamClient {
 
 		//Find a default place to move to.
 		AbstractObject movementGoal = Combat.nearestBeacon(space, ship);
+		boolean solidGoal = false;
 		
 		//Go to either the flag or the base
 		if(ship.isCarryingFlag()){
@@ -106,6 +107,7 @@ public class CaptureBot extends TeamClient {
 			for(Base base : space.getBases()){
 				if(base.getTeamName().equalsIgnoreCase(ship.getTeamName())){
 					movementGoal = base;
+					solidGoal = true;
 				}
 			}
 		}	
@@ -118,39 +120,12 @@ public class CaptureBot extends TeamClient {
 			}
 		}
 		
+		newAction = getMovementAction(space, ship, movementGoal.getPosition(), solidGoal, false);
+		
 //		//If we're low on energy, look for a beacon close by
 //		if(ship.getEnergy() < EnergyThreshold){
 //			movementGoal = Combat.nearestBeacon(space, ship);
 //		}
-		
-		previousMovementTargetUUID = movementGoal.getId();
-		//If it's time to generate a new path, do it
-		if(space.getCurrentTimestep() - this.lastTimestep > PathingFrequency
-				|| this.path.size() == 0
-				|| previousMovementTargetUUID != movementGoal.getId() ){
-			this.lastTimestep = space.getCurrentTimestep();
-			this.path = Pathing.findPath(space, ship, movementGoal);
-		}
-				
-		//Get a waypoint to move to
-		//If we're already really close to it, find the next target
-		Position waypoint = this.path.get(0);
-		while(waypoint != null && space.findShortestDistance(ship.getPosition(), waypoint) < ship.getRadius() * 2){
-			this.path.remove(0);
-			waypoint = null;
-			if(this.path.size() > 0){
-				waypoint = this.path.get(0);
-			}
-		}
-		
-//		//If we have no other waypoint, aim at our target
-//		if(waypoint == null){
-//			waypoint = target.getPosition();
-//		}
-		
-		//Get the movement to our waypoint
-		int distanceFactor = 150;
-		newAction = Vectoring.advancedMovementVector(space, ship, waypoint, false, distanceFactor);
 		
 		
 //		//Decide if we should shoot		
@@ -166,6 +141,52 @@ public class CaptureBot extends TeamClient {
 		}
 		
 		return newAction;
+	}
+	
+	private AbstractAction getMovementAction(Toroidal2DPhysics space, Ship ship, Position targetPosition, boolean solidTarget, boolean targetChanged){
+		AbstractAction movementAction = new DoNothingAction();
+		int distanceFactor = 150;
+		
+		Set<AbstractObject> obstructions = Pathing.findObstructions(space, targetPosition);
+		
+		if(space.isPathClearOfObstructions(ship.getPosition(), targetPosition, obstructions, ship.getRadius())){
+			//If the path to the goal is clear, go straight there
+			movementAction = Vectoring.advancedMovementVector(space, ship, targetPosition, solidTarget, distanceFactor);
+		}
+		else{
+			//Otherwise, make a path towards the target
+			
+			//If it's time to generate a new path, do it
+			if(space.getCurrentTimestep() - this.lastTimestep > PathingFrequency
+					|| this.path.size() == 0
+					|| targetChanged){
+				this.lastTimestep = space.getCurrentTimestep();
+				this.path = Pathing.findPath(space, ship, targetPosition);
+			}
+
+			//Get a waypoint to move to
+			//If we're already really close to it, find the next target
+			Position waypoint = this.path.get(0);
+			boolean solidWaypoint = false;
+			while(waypoint != null && space.findShortestDistance(ship.getPosition(), waypoint) < ship.getRadius() * 2){
+				this.path.remove(0);
+				waypoint = null;
+				if(this.path.size() > 0){
+					waypoint = this.path.get(0);
+				}
+			}
+			
+			//If we have no other waypoint, aim at our target
+			if(waypoint == null){
+				waypoint = targetPosition;
+				solidWaypoint = true;
+			}
+
+			//Get the movement to our waypoint
+			movementAction = Vectoring.advancedMovementVector(space, ship, waypoint, solidWaypoint, distanceFactor);
+		}
+		
+		return movementAction;
 	}
 	
 	/**
