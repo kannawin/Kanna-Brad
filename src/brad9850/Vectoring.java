@@ -141,7 +141,7 @@ public class Vectoring {
 	public static AbstractAction advancedMovementVector(Toroidal2DPhysics space, Ship ship, Position targetPosition, boolean solidTarget, int distanceFactor) {
 		// speed adjustments relative to max accel
 		double movementFactor = 1.6;
-		double movementMax = Movement.MAX_TRANSLATIONAL_ACCELERATION * movementFactor;
+		double movementMax = 55;
 
 		AbstractAction sendOff = null;
 		double distance = space.findShortestDistance(ship.getPosition(), targetPosition);
