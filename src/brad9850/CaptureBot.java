@@ -61,7 +61,7 @@ public class CaptureBot extends TeamClient {
 	int count = 0;
 	int previousTimestep = 0;
 	
-	
+	UUID currentShip = null;
 	/**
 	 * 
 	 */
@@ -74,7 +74,16 @@ public class CaptureBot extends TeamClient {
 			if (actionable instanceof Ship) {
 				Ship ship = (Ship) actionable;
 				
+				UUID tempShip = ship.getId();
+				if(tempShip != currentShip){
+					currentShip = tempShip;
+					System.out.println(currentShip);
+				}
+				
+
 				AbstractAction action = getAction(space, ship);
+				
+				//AbstractAction action = new DoNothingAction();
 				actions.put(ship.getId(), action);
 				
 			} else {
