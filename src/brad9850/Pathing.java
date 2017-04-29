@@ -288,7 +288,7 @@ public class Pathing {
 			}
 		}
 
-		Set<AbstractObject> obstructions = findObstructions(space);
+		Set<AbstractObject> obstructions = findObstructions(space, nodes.get(1));
 
 		// Find the actual distance between nodes
 		for (int i = 0; i < nodes.size() - 1; i++) {
@@ -337,16 +337,23 @@ public class Pathing {
 	 * @param space
 	 * @return
 	 */
-	public static Set<AbstractObject> findObstructions(Toroidal2DPhysics space) {
+	public static Set<AbstractObject> findObstructions(Toroidal2DPhysics space, Position targetPosition) {
 		// Find all obstacles
 		Set<AbstractObject> obstructions = new HashSet<AbstractObject>();
 		for (Asteroid block : space.getAsteroids()) {
 			if (!block.isMineable()) {
-				obstructions.add(block);
+				//Don't add an obstruction if it is our target
+				if(!block.getPosition().equalsLocationOnly(targetPosition)){
+					obstructions.add(block);
+				}
 			}
 		}
+		
 		for (Base block : space.getBases()) {
-			obstructions.add(block);
+			//Don't add an obstruction if it is our target
+			if(!block.getPosition().equalsLocationOnly(targetPosition)){
+				obstructions.add(block);
+			}
 		}
 
 		// Don't worry about pathing around other ships & bullets

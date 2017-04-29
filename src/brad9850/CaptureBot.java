@@ -24,6 +24,7 @@ import spacesettlers.graphics.StarGraphics;
 import spacesettlers.objects.AbstractActionableObject;
 import spacesettlers.objects.AbstractObject;
 import spacesettlers.objects.Base;
+import spacesettlers.objects.Flag;
 import spacesettlers.objects.Ship;
 import spacesettlers.objects.powerups.SpaceSettlersPowerupEnum;
 import spacesettlers.objects.resources.ResourcePile;
@@ -95,28 +96,32 @@ public class CaptureBot extends TeamClient {
 		ship.setCurrentAction(null);
 		
 		AbstractAction newAction = new DoNothingAction();
+
+		//Find a default place to move to.
+		AbstractObject movementGoal = Combat.nearestBeacon(space, ship);
 		
-//		if(ship.isCarryingFlag()){
-//			//If we're carrying the flag, return to base
-//			for(Base base : space.getBases()){
-//				if(base.getTeamName().equalsIgnoreCase(ship.getTeamName())){
-//					
-//				}
-//			}
+		//Go to either the flag or the base
+		if(ship.isCarryingFlag()){
+			//If we're carrying the flag, return to base
+			for(Base base : space.getBases()){
+				if(base.getTeamName().equalsIgnoreCase(ship.getTeamName())){
+					movementGoal = base;
+				}
+			}
+		}	
+		else{
+			//If we're not carrying the flag, hunt it down
+			for(Flag flag : space.getFlags()){
+				if(!flag.getTeamName().equalsIgnoreCase(ship.getTeamName())){
+					movementGoal = flag;
+				}
+			}
+		}
+		
+//		//If we're low on energy, look for a beacon close by
+//		if(ship.getEnergy() < EnergyThreshold){
+//			movementGoal = Combat.nearestBeacon(space, ship);
 //		}
-		
-		//Find our target
-		if(!isValidTarget(space, targetID)){
-			targetID = findTarget(space, ship);
-		}
-		AbstractObject target = space.getObjectById(targetID);
-		
-		//Find a place to move to.
-		AbstractObject movementGoal = target;
-		//If we're low on energy, look for a beacon close by
-		if(ship.getEnergy() < EnergyThreshold){
-			movementGoal = Combat.nearestBeacon(space, ship);
-		}
 		
 		previousMovementTargetUUID = movementGoal.getId();
 		//If it's time to generate a new path, do it
@@ -138,23 +143,23 @@ public class CaptureBot extends TeamClient {
 			}
 		}
 		
-		//If we have no other waypoint, aim at our target
-		if(waypoint == null){
-			waypoint = target.getPosition();
-		}
+//		//If we have no other waypoint, aim at our target
+//		if(waypoint == null){
+//			waypoint = target.getPosition();
+//		}
 		
 		//Get the movement to our waypoint
 		int distanceFactor = 150;
 		newAction = Vectoring.advancedMovementVector(space, ship, waypoint, false, distanceFactor);
 		
 		
-		//Decide if we should shoot		
-		if(Combat.willMakeItToTarget(space, ship, target, target.getPosition().getTranslationalVelocity())){
-			shouldShoot= true;
-		}
-		else{
-			shouldShoot = false;
-		}
+//		//Decide if we should shoot		
+//		if(Combat.willMakeItToTarget(space, ship, target, target.getPosition().getTranslationalVelocity())){
+//			shouldShoot= true;
+//		}
+//		else{
+//			shouldShoot = false;
+//		}
 		
 		if(Drawing){
 			drawPath(space, ship);
