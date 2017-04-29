@@ -105,6 +105,7 @@ public class CaptureBot extends TeamClient {
 		AbstractObject movementGoal = Combat.nearestBeacon(space, ship);
 		boolean solidGoal = false;
 		
+		//Pick somewhere to go to
 		//Go to either the flag or the base
 		if(ship.isCarryingFlag()){
 			//If we're carrying the flag, return to base
@@ -124,6 +125,7 @@ public class CaptureBot extends TeamClient {
 			}
 		}
 		
+		//See if our goal has changed, to know whether to make a new path
 		boolean goalChanged = false;
 		if(movementGoal.getId() != this.previousMovementTargetID){
 			goalChanged = true;
@@ -133,6 +135,7 @@ public class CaptureBot extends TeamClient {
 			drawPath(space, ship);
 		}
 		
+		//Choose where to go to
 		newAction = getMovementAction(space, ship, movementGoal.getPosition(), solidGoal, goalChanged);
 		this.previousMovementTargetID = movementGoal.getId();
 		
