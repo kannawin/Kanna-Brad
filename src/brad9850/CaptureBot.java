@@ -55,7 +55,7 @@ public class CaptureBot extends TeamClient {
 	public final boolean Drawing = true;
 	
 	Position previousPosition = null;
-	Position previousMovementTargetPosition = null;
+	UUID previousMovementTargetID = null;
 	
 	int sum = 0;
 	int count = 0;
@@ -108,7 +108,7 @@ public class CaptureBot extends TeamClient {
 
 		//Find a default place to move to.
 		AbstractObject movementGoal = Combat.nearestBeacon(space, ship);
-		boolean solidGoal = false;
+		boolean solidTarget = false;
 		
 		//Go to either the flag or the base
 		if(ship.isCarryingFlag()){
@@ -116,7 +116,7 @@ public class CaptureBot extends TeamClient {
 			for(Base base : space.getBases()){
 				if(base.getTeamName().equalsIgnoreCase(ship.getTeamName())){
 					movementGoal = base;
-					solidGoal = true;
+					solidTarget = true;
 				}
 			}
 		}	
@@ -128,8 +128,6 @@ public class CaptureBot extends TeamClient {
 				}
 			}
 		}
-		
-		newAction = getMovementAction(space, ship, movementGoal.getPosition(), solidGoal, false);
 		
 //		//If we're low on energy, look for a beacon close by
 //		if(ship.getEnergy() < EnergyThreshold){
@@ -149,6 +147,12 @@ public class CaptureBot extends TeamClient {
 			drawPath(space, ship);
 		}
 		
+		boolean targetChanged = false;
+		if(movementGoal.getId() != previousMovementTargetID){
+			targetChanged = true;
+		}
+		newAction = getMovementAction(space, ship, movementGoal.getPosition(), solidTarget, targetChanged);
+		
 		return newAction;
 	}
 	
@@ -161,6 +165,9 @@ public class CaptureBot extends TeamClient {
 		if(space.isPathClearOfObstructions(ship.getPosition(), targetPosition, obstructions, ship.getRadius())){
 			//If the path to the goal is clear, go straight there
 			movementAction = Vectoring.advancedMovementVector(space, ship, targetPosition, solidTarget, distanceFactor);
+			//We don't need this functionally, but it does fix drawing the path
+			this.path.clear();
+			this.path.add(targetPosition);
 		}
 		else{
 			//Otherwise, make a path towards the target
