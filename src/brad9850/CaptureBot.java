@@ -4,17 +4,12 @@ import java.awt.Color;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.Map;
-import java.util.Queue;
-import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
 
 import spacesettlers.actions.AbstractAction;
 import spacesettlers.actions.DoNothingAction;
-import spacesettlers.actions.MoveAction;
-import spacesettlers.actions.MoveToObjectAction;
 import spacesettlers.actions.PurchaseCosts;
 import spacesettlers.actions.PurchaseTypes;
 import spacesettlers.clients.TeamClient;
@@ -30,7 +25,6 @@ import spacesettlers.objects.powerups.SpaceSettlersPowerupEnum;
 import spacesettlers.objects.resources.ResourcePile;
 import spacesettlers.objects.weapons.Missile;
 import spacesettlers.simulator.Toroidal2DPhysics;
-import spacesettlers.utilities.Movement;
 import spacesettlers.utilities.Position;
 /**
  * A* based Agent that only hunts down the nearest enemy
@@ -90,7 +84,8 @@ public class CaptureBot extends TeamClient {
 				// it is a base.  Heuristically decide when to use the shield (TODO)
 				actions.put(actionable.getId(), new DoNothingAction());
 			}
-		} 
+		}
+		
 		return actions;
 	}
 	
@@ -108,7 +103,7 @@ public class CaptureBot extends TeamClient {
 
 		//Find a default place to move to.
 		AbstractObject movementGoal = Combat.nearestBeacon(space, ship);
-		boolean solidTarget = false;
+		boolean solidGoal = false;
 		
 		//Go to either the flag or the base
 		if(ship.isCarryingFlag()){
@@ -116,7 +111,7 @@ public class CaptureBot extends TeamClient {
 			for(Base base : space.getBases()){
 				if(base.getTeamName().equalsIgnoreCase(ship.getTeamName())){
 					movementGoal = base;
-					solidTarget = true;
+					solidGoal = true;
 				}
 			}
 		}	
@@ -129,45 +124,33 @@ public class CaptureBot extends TeamClient {
 			}
 		}
 		
-//		//If we're low on energy, look for a beacon close by
-//		if(ship.getEnergy() < EnergyThreshold){
-//			movementGoal = Combat.nearestBeacon(space, ship);
-//		}
-		
-		
-//		//Decide if we should shoot		
-//		if(Combat.willMakeItToTarget(space, ship, target, target.getPosition().getTranslationalVelocity())){
-//			shouldShoot= true;
-//		}
-//		else{
-//			shouldShoot = false;
-//		}
+		boolean goalChanged = false;
+		if(movementGoal.getId() != this.previousMovementTargetID){
+			goalChanged = true;
+		}
 		
 		if(Drawing){
 			drawPath(space, ship);
 		}
 		
-		boolean targetChanged = false;
-		if(movementGoal.getId() != previousMovementTargetID){
-			targetChanged = true;
-		}
-		newAction = getMovementAction(space, ship, movementGoal.getPosition(), solidTarget, targetChanged);
+		newAction = getMovementAction(space, ship, movementGoal.getPosition(), solidGoal, goalChanged);
+		this.previousMovementTargetID = movementGoal.getId();
 		
 		return newAction;
 	}
 	
-	private AbstractAction getMovementAction(Toroidal2DPhysics space, Ship ship, Position targetPosition, boolean solidTarget, boolean targetChanged){
+	private AbstractAction getMovementAction(Toroidal2DPhysics space, Ship ship, Position goalPosition, boolean solidGoal, boolean goalChanged){
 		AbstractAction movementAction = new DoNothingAction();
 		int distanceFactor = 150;
 		
-		Set<AbstractObject> obstructions = Pathing.findObstructions(space, targetPosition);
+		Set<AbstractObject> obstructions = Pathing.findObstructions(space, goalPosition);
 		
-		if(space.isPathClearOfObstructions(ship.getPosition(), targetPosition, obstructions, ship.getRadius())){
+		if(space.isPathClearOfObstructions(ship.getPosition(), goalPosition, obstructions, ship.getRadius())){
 			//If the path to the goal is clear, go straight there
-			movementAction = Vectoring.advancedMovementVector(space, ship, targetPosition, solidTarget, distanceFactor);
+			movementAction = Vectoring.advancedMovementVector(space, ship, goalPosition, solidGoal, distanceFactor);
 			//We don't need this functionally, but it does fix drawing the path
 			this.path.clear();
-			this.path.add(targetPosition);
+			this.path.add(goalPosition);
 		}
 		else{
 			//Otherwise, make a path towards the target
@@ -175,9 +158,9 @@ public class CaptureBot extends TeamClient {
 			//If it's time to generate a new path, do it
 			if(space.getCurrentTimestep() - this.lastTimestep > PathingFrequency
 					|| this.path.size() == 0
-					|| targetChanged){
+					|| goalChanged){
 				this.lastTimestep = space.getCurrentTimestep();
-				this.path = Pathing.findPath(space, ship, targetPosition);
+				this.path = Pathing.findPath(space, ship, goalPosition);
 			}
 
 			//Get a waypoint to move to
@@ -194,7 +177,7 @@ public class CaptureBot extends TeamClient {
 			
 			//If we have no other waypoint, aim at our target
 			if(waypoint == null){
-				waypoint = targetPosition;
+				waypoint = goalPosition;
 				solidWaypoint = true;
 			}
 
