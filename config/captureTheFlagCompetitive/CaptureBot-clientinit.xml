@@ -13,5 +13,5 @@
 	<ladderName>Bradford Kann-Win</ladderName>
 	
 	<!-- The number of ships in the team.  Note, if this is bigger than the maximum number of allowable ships per team, it is ignored -->
-	<numberInitialShipsInTeam>1</numberInitialShipsInTeam>
+	<numberInitialShipsInTeam>6</numberInitialShipsInTeam>
 </TeamClientConfig>

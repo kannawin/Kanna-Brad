@@ -22,7 +22,7 @@
 	
 	<!-- Specify the maximum number of ships in a team -->
 	<maximumShipsPerTeam>6</maximumShipsPerTeam>
-	<maximumInitialShipsPerTeam>3</maximumInitialShipsPerTeam>
+	<maximumInitialShipsPerTeam>6</maximumInitialShipsPerTeam>
 	
 	<!-- Specify any controllable clients in the simulator (this can include heuristics).  
 	     Note, all clients are teams since eventually all clients can make new ships. -->

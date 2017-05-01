@@ -10,6 +10,15 @@ import spacesettlers.objects.Flag;
 import spacesettlers.objects.Ship;
 import spacesettlers.simulator.Toroidal2DPhysics;
 
+
+
+/**
+ * 
+ * @author Scott Kannawin & Christopher Bradford
+ * 
+ * Methods used to grab the teamwork actions
+ *
+ */
 public class Actions {
 	public static AbstractObject[] getActions(Toroidal2DPhysics space, ArrayList<UUID> ships){
 		AbstractObject[] actionList = new AbstractObject[ships.size()];
@@ -17,24 +26,24 @@ public class Actions {
 		for(int i = 0; i<ships.size();i++){
 			Ship ship = (Ship) space.getObjectById(ships.get(i));
 			switch(i){
-			case 0: //flag bearer 
-				actionList[i] = flagBearer(space,ship);
-				break;	
-			case 1: //defender #1
-				actionList[i] = defender(space,ship);
-				break;
-			case 2: //resource gatherer #1
-				actionList[i] = gatherer(space,ship,null);
-				break;
-			case 3: //harasser
-				actionList[i] = Combat.nearestEnemy(space, ship);
-				break;
-			case 4: //resource gatherer #2
-				actionList[i] = gatherer(space,ship,actionList[2]);
-				break;
-			case 5: //defender #2
-				actionList[i] = defender(space,ship);
-				break;
+				case 0: //flag bearer 
+					actionList[i] = flagBearer(space,ship);
+					break;	
+				case 1: //defender #1
+					actionList[i] = defender(space,ship);
+					break;
+				case 2: //resource gatherer #1
+					actionList[i] = gatherer(space,ship,null);
+					break;
+				case 3: //harasser
+					actionList[i] = Combat.nearestEnemy(space, ship);
+					break;
+				case 4: //resource gatherer #2
+					actionList[i] = gatherer(space,ship,actionList[2]);
+					break;
+				case 5: //defender #2
+					actionList[i] = defender(space,ship);
+					break;
 			}
 		}
 		
@@ -142,8 +151,11 @@ public class Actions {
 			for(Asteroid asteroid : space.getAsteroids()){
 				if(asteroid.isMineable() 
 						&& space.findShortestDistance(asteroid.getPosition(), ship.getPosition()) < shortDistance
-						&& space.getObjectById(otherTarget.getId()).getPosition() != asteroid.getPosition()){
+						){
 					shortDistance = space.findShortestDistance(asteroid.getPosition(), ship.getPosition());
+					movementGoal = asteroid;
+				}
+				else if(asteroid.isMineable()){
 					movementGoal = asteroid;
 				}
 			}
