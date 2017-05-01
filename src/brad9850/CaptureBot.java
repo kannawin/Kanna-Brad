@@ -63,7 +63,7 @@ public class CaptureBot extends TeamClient {
 	
 	ArrayList<UUID> ships = new ArrayList<UUID>();
 	HashMap<UUID,ArrayList<Position>> paths = new HashMap<UUID,ArrayList<Position>>();
-	AbstractObject[] targets;
+	ArrayList<AbstractObject> targets = new ArrayList<AbstractObject>();
 	UUID currentShip = null;
 	/**
 	 * 
@@ -81,16 +81,11 @@ public class CaptureBot extends TeamClient {
 				if(ships.indexOf(tempShip) == -1){
 					ships.add(tempShip);
 					paths.put(tempShip, null);
+					this.targets.add(null);
 				}
-				
-				AbstractAction[] action = getAction(space, ship);
-				
-				//AbstractAction action = new DoNothingAction();
-				
-				for(int i = 0; i < this.ships.size();i++){
-					actions.put(this.ships.get(i),action[i]);
-				}
-				
+				else{
+					actions.put(tempShip, getAction(space,ship));
+				}	
 			} else {
 				// it is a base.  Heuristically decide when to use the shield (TODO)
 				actions.put(actionable.getId(), new DoNothingAction());
@@ -105,11 +100,11 @@ public class CaptureBot extends TeamClient {
 	 * @param ship
 	 * @return
 	 */
-	private AbstractAction[] getAction(Toroidal2DPhysics space, Ship ship) {
+	private AbstractAction getAction(Toroidal2DPhysics space, Ship ship) {
 		//nullify from previous action
 		ship.setCurrentAction(null);
 		
-		AbstractAction[] newAction = new AbstractAction[this.ships.size()];
+		AbstractAction newAction = new DoNothingAction();
 
 		//Find a default place to move to.
 		AbstractObject movementGoal = Combat.nearestBeacon(space, ship);
@@ -121,64 +116,66 @@ public class CaptureBot extends TeamClient {
 //			movementGoal = Combat.nearestBeacon(space, ship);
 //		}
 		
+		int i = this.ships.indexOf(ship.getId());
+		
 		previousMovementTargetUUID = movementGoal.getId();
 		//If it's time to generate a new path, do it
 		if(space.getCurrentTimestep() - this.lastTimestep > PathingFrequency
 				|| this.path.size() == 0
 				|| previousMovementTargetUUID != movementGoal.getId() ){
 			
-			this.targets = Actions.getActions(space, this.ships);
+			this.targets.set(i, Actions.getActions(space, this.ships, this.ships.get(i),this.targets));
 			for(UUID ships : this.paths.keySet()){
-				this.paths.put(ships, Pathing.findPath(space, ship, this.targets[this.ships.indexOf(ships)]));
+				this.paths.put(ships, Pathing.findPath(space, ship, this.targets.get(i)));
 			}
 			
 			this.lastTimestep = space.getCurrentTimestep();
 			
 		}
+	
+	
+	
+
+	
+		ArrayList<Position> currentPath = this.paths.get(this.ships.get(i));
 		
+		//Get a waypoint to move to
+		//If we're already really close to it, find the next target
+		Position waypoint = currentPath.get(0);
 		
-		
-		for(int i =0 ; i<this.ships.size();i++){
-		
-			ArrayList<Position> currentPath = this.paths.get(this.ships.get(i));
-			
-			//Get a waypoint to move to
-			//If we're already really close to it, find the next target
-			Position waypoint = currentPath.get(0);
-			
-			while(waypoint != null && space.findShortestDistance(ship.getPosition(), waypoint) < ship.getRadius() * 2){
-				currentPath.remove(0);
-				waypoint = null;
-				if(this.path.size() > 0){
-					waypoint = currentPath.get(0);
-				}
+		while(waypoint != null && space.findShortestDistance(ship.getPosition(), waypoint) < ship.getRadius() * 2){
+			currentPath.remove(0);
+			waypoint = null;
+			if(this.path.size() > 0){
+				waypoint = currentPath.get(0);
 			}
-			
-			//If we have no other waypoint, aim at our target
-			if(waypoint == null){
-				waypoint = movementGoal.getPosition();
-			}
-			
-			//Get the movement to our waypoint
-			int distanceFactor = 150;
-			newAction[i] = Vectoring.advancedMovementVector(space, ship, waypoint, false, distanceFactor);
-			
-			
-	//		//Decide if we should shoot		
-	//		if(Combat.willMakeItToTarget(space, ship, target, target.getPosition().getTranslationalVelocity())){
-	//			shouldShoot= true;
-	//		}
-	//		else{
-	//			shouldShoot = false;
-	//		}
-			
-			if(Drawing){
-				drawPath(space, ship);
-			}
-			
-			this.paths.put(this.ships.get(i), currentPath);
-				
 		}
+		
+		//If we have no other waypoint, aim at our target
+		if(waypoint == null){
+			waypoint = movementGoal.getPosition();
+		}
+		
+		//Get the movement to our waypoint
+		int distanceFactor = 150;
+		newAction = Vectoring.advancedMovementVector(space, ship, waypoint, false, distanceFactor);
+		
+		
+//		//Decide if we should shoot		
+//		if(Combat.willMakeItToTarget(space, ship, target, target.getPosition().getTranslationalVelocity())){
+//			shouldShoot= true;
+//		}
+//		else{
+//			shouldShoot = false;
+//		}
+		
+		if(Drawing){
+			drawPath(space, ship);
+		}
+		
+		this.paths.put(this.ships.get(i), currentPath);
+			
+	
 		return newAction;
 	}
 	

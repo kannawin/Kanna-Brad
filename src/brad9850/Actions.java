@@ -20,34 +20,31 @@ import spacesettlers.simulator.Toroidal2DPhysics;
  *
  */
 public class Actions {
-	public static AbstractObject[] getActions(Toroidal2DPhysics space, ArrayList<UUID> ships){
-		AbstractObject[] actionList = new AbstractObject[ships.size()];
+	public static AbstractObject getActions(Toroidal2DPhysics space, ArrayList<UUID> ships, UUID ship, ArrayList<AbstractObject> otherTargets){
+		AbstractObject actionList = space.getObjectById(ship);
 		
-		for(int i = 0; i<ships.size();i++){
-			Ship ship = (Ship) space.getObjectById(ships.get(i));
-			switch(i){
-				case 0: //flag bearer 
-					actionList[i] = flagBearer(space,ship);
-					break;	
-				case 1: //defender #1
-					actionList[i] = defender(space,ship);
-					break;
-				case 2: //resource gatherer #1
-					actionList[i] = gatherer(space,ship,null);
-					break;
-				case 3: //harasser
-					actionList[i] = Combat.nearestEnemy(space, ship);
-					break;
-				case 4: //resource gatherer #2
-					actionList[i] = gatherer(space,ship,actionList[2]);
-					break;
-				case 5: //defender #2
-					actionList[i] = defender(space,ship);
-					break;
-			}
+		Ship currentShip = (Ship) space.getObjectById(ship);
+		switch(ships.indexOf(ship)){
+			case 0: //flag bearer 
+				actionList = flagBearer(space,currentShip);
+				break;	
+			case 1: //defender #1
+				actionList = defender(space,currentShip);
+				break;
+			case 2: //resource gatherer #1
+				actionList = gatherer(space,currentShip,otherTargets);
+				break;
+			case 3: //harasser
+				actionList = Combat.nearestEnemy(space, currentShip);
+				break;
+			case 4: //resource gatherer #2
+				actionList = gatherer(space,currentShip,otherTargets);
+				break;
+			case 5: //defender #2
+				actionList = defender(space,currentShip);
+				break;
 		}
-		
-		
+	
 		return actionList;
 	}
 	
@@ -132,7 +129,7 @@ public class Actions {
 	}
 	
 	//determines for a gatherer ship to get a resource closest to the base
-	public static AbstractObject gatherer(Toroidal2DPhysics space, Ship ship, AbstractObject otherTarget){
+	public static AbstractObject gatherer(Toroidal2DPhysics space, Ship ship, ArrayList<AbstractObject> otherTarget){
 		AbstractObject movementGoal = null;
 		double shortDistance = Double.MAX_VALUE;
 		
