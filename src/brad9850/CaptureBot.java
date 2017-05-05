@@ -412,8 +412,7 @@ public class CaptureBot extends TeamClient {
 				boolean canplace = true;
 				for (AbstractActionableObject actionableObject : actionableObjects) {
 					if (actionableObject instanceof Ship && ((Ship)actionableObject).isCarryingFlag()) {
-						// base can only be bought if its within a certain
-						// distance from another base
+						// The base should be placed far away from existing bases
 						for (AbstractActionableObject actionableObject2 : actionableObjects) {
 							if (actionableObject2 instanceof Base) {
 								if (space.findShortestDistance(actionableObject2.getPosition(),
