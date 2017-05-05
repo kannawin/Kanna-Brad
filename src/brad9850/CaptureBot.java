@@ -98,8 +98,11 @@ public class CaptureBot extends TeamClient {
 		AbstractObject movementGoal = Combat.nearestBeacon(space, ship);
 		boolean solidGoal = false;		
 		
-		//Pick somewhere to go to
-		movementGoal = Actions.getActions(space, this.ships, ship.getId(), this.targets);
+		
+		//Pick somewhere to go to, as long as we have enough energy
+		if(ship.isCarryingFlag() || !(ship.getEnergy() < 1500)){
+			movementGoal = Actions.getActions(space, this.ships, ship.getId(), this.targets);
+		}
 		//Let the other ships know where we're going
 		this.targets.set(currentShipIndex, movementGoal);
 		
