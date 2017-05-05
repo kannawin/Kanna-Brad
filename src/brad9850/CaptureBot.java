@@ -411,7 +411,7 @@ public class CaptureBot extends TeamClient {
 			else if (nextPurchase == PurchaseTypes.BASE) {
 				boolean canplace = true;
 				for (AbstractActionableObject actionableObject : actionableObjects) {
-					if (actionableObject instanceof Ship && actionableObject.getId() == this.ships.get(0)) {
+					if (actionableObject instanceof Ship && ((Ship)actionableObject).isCarryingFlag()) {
 						// base can only be bought if its within a certain
 						// distance from another base
 						for (AbstractActionableObject actionableObject2 : actionableObjects) {
