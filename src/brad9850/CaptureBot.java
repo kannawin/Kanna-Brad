@@ -112,9 +112,9 @@ public class CaptureBot extends TeamClient {
 			goalChanged = true;
 		}
 		
-		//Decide if we should shoot	
-		if (movementGoal instanceof Ship &&
-				Combat.willMakeItToTarget(space, ship, movementGoal, movementGoal.getPosition().getTranslationalVelocity())) {
+		//Decide if we should shoot
+		if (movementGoal instanceof Ship
+				&& Combat.willMakeItToTarget(space, ship, movementGoal, movementGoal.getPosition().getTranslationalVelocity())) {
 			shouldShoot.set(currentShipIndex, true);
 		} else {
 			shouldShoot.set(currentShipIndex, false);
@@ -180,28 +180,6 @@ public class CaptureBot extends TeamClient {
 		
 		return movementAction;
 	}
-	
-//	/**
-//	 * Get a target to hunt
-//	 * @param space
-//	 * @param ship
-//	 * @return
-//	 */
-//	private UUID findTarget(Toroidal2DPhysics space, Ship ship){
-//		return Combat.nearestEnemy(space, ship).getId();
-//	}
-//	
-//	/**
-//	 * See if we should still chase our current target
-//	 * @param space
-//	 * @param targetID
-//	 * @return
-//	 */
-//	private boolean isValidTarget(Toroidal2DPhysics space, UUID targetID){
-//		return (targetID != null
-//				&& space.getObjectById(targetID) != null
-//				&& space.getObjectById(targetID).isAlive());
-//	}
 	
 	/**
 	 * Draw a line directly connecting the ship and its target, and a bunch of lines connecting the path nodes between the two
