@@ -22,31 +22,6 @@ import spacesettlers.utilities.Vector2D;
 
 public class Combat {
 
-	
-	/**
-	 * See if a team is a non-AI enemy
-	 * 
-	 * @param teamName The name of the team we are checking
-	 * @param friendlyTeamName The name of our team
-	 */
-	public static boolean isHumanEnemyTeam(String teamName, String friendlyTeamName){
-		//See if it's our name
-		if(teamName.equalsIgnoreCase(friendlyTeamName)){
-			return false;
-		}
-
-		String[] aiNames = {"RandomTeam", "DoNothingTeam", "HeuristicTeam"};
-		//See if it's an AI name
-		for(String name: aiNames){
-			if(teamName.equalsIgnoreCase(name)){
-				return false;
-			}
-		}
-		
-		//Otherwise, it's a human enemy
-		return true;
-	}
-
 	/**
 	 * Find the base for an enemy team nearest to this ship
 	 * 
