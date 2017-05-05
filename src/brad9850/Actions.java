@@ -76,12 +76,12 @@ public class Actions {
 		return movementGoal;
 	}
 	
-	//will return the shortest target to the ship on our half of the map
+	//will return the shortest target to the ship on our half of the map, prioritizing ships carrying flags
 	//all defenders can attack the same target as there will be no conflicts
 	public static AbstractObject defender(Toroidal2DPhysics space, Ship ship, ArrayList<AbstractObject> otherTargets){
 		int halfMin = 0;
 		int halfMax = space.getWidth() / 2;
-		AbstractObject returnTarget = null;
+		AbstractObject target = null;
 		double shortestDistance = Double.MAX_VALUE;
 		
 		//need to find which half of the map our base is on
@@ -106,25 +106,31 @@ public class Actions {
 		}
 		//get ships on our half
 		for(Ship enemy : space.getShips()){
-			if(enemy.getTeamName().equalsIgnoreCase(ship.getTeamName()) == false
-					&& enemy.getPosition().getX() > halfMin
-					&& enemy.getPosition().getX() < halfMax){
-				targetList.add(enemy);
+			if(enemy.getTeamName().equalsIgnoreCase(ship.getTeamName()) == false){
+				//If the ship is carrying our flag, always focus it first
+				if(enemy.isCarryingFlag()){
+					target = enemy;
+				}
+				if (enemy.getPosition().getX() > halfMin && enemy.getPosition().getX() < halfMax) {
+					targetList.add(enemy);
+				}
 			}
 		}
-		//determine shortest enemy
-		for(AbstractObject enemy : targetList){
-			if(space.findShortestDistance(enemy.getPosition(), ship.getPosition()) < shortestDistance){
-				shortestDistance = space.findShortestDistance(enemy.getPosition(), ship.getPosition());
-				returnTarget = enemy;
+		//If there's no flag carrier, hunt the closest enemy
+		if (target == null) {
+			for (AbstractObject enemy : targetList) {
+				if (space.findShortestDistance(enemy.getPosition(), ship.getPosition()) < shortestDistance) {
+					shortestDistance = space.findShortestDistance(enemy.getPosition(), ship.getPosition());
+					target = enemy;
+				}
 			}
 		}
 		//if there is nothing on our half, go for a resource
-		if(returnTarget == null){
-			returnTarget = gatherer(space,ship,otherTargets);
+		if(target == null){
+			target = gatherer(space,ship,otherTargets);
 		}
 			
-		return returnTarget;
+		return target;
 	}
 	
 	//determines for a gatherer ship to get a resource closest to the base
