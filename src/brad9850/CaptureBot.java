@@ -445,7 +445,7 @@ public class CaptureBot extends TeamClient {
 								powerupBought = true;
 							}
 						}
-						else if(firstBase != null){
+						else if(firstBase == null){
 							firstBase = base;
 						}
 					}
