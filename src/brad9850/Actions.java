@@ -10,35 +10,41 @@ import spacesettlers.objects.Flag;
 import spacesettlers.objects.Ship;
 import spacesettlers.simulator.Toroidal2DPhysics;
 
+
+
+/**
+ * 
+ * @author Scott Kannawin & Christopher Bradford
+ * 
+ * Methods used to grab the teamwork actions
+ *
+ */
 public class Actions {
-	public static AbstractObject[] getActions(Toroidal2DPhysics space, ArrayList<UUID> ships){
-		AbstractObject[] actionList = new AbstractObject[ships.size()];
+	public static AbstractObject getActions(Toroidal2DPhysics space, ArrayList<UUID> ships, UUID ship, ArrayList<AbstractObject> otherTargets){
+		AbstractObject actionList = space.getObjectById(ship);
 		
-		for(int i = 0; i<ships.size();i++){
-			Ship ship = (Ship) space.getObjectById(ships.get(i));
-			switch(i){
+		Ship currentShip = (Ship) space.getObjectById(ship);
+		switch(ships.indexOf(ship)){
 			case 0: //flag bearer 
-				actionList[i] = flagBearer(space,ship);
+				actionList = flagBearer(space,currentShip);
 				break;	
 			case 1: //defender #1
-				actionList[i] = defender(space,ship);
+				actionList = defender(space,currentShip);
 				break;
 			case 2: //resource gatherer #1
-				actionList[i] = gatherer(space,ship,null);
+				actionList = gatherer(space,currentShip,otherTargets);
 				break;
 			case 3: //harasser
-				actionList[i] = Combat.nearestEnemy(space, ship);
+				actionList = Combat.nearestEnemy(space, currentShip);
 				break;
 			case 4: //resource gatherer #2
-				actionList[i] = gatherer(space,ship,actionList[2]);
+				actionList = gatherer(space,currentShip,otherTargets);
 				break;
 			case 5: //defender #2
-				actionList[i] = defender(space,ship);
+				actionList = defender(space,currentShip);
 				break;
-			}
 		}
-		
-		
+	
 		return actionList;
 	}
 	
@@ -123,7 +129,7 @@ public class Actions {
 	}
 	
 	//determines for a gatherer ship to get a resource closest to the base
-	public static AbstractObject gatherer(Toroidal2DPhysics space, Ship ship, AbstractObject otherTarget){
+	public static AbstractObject gatherer(Toroidal2DPhysics space, Ship ship, ArrayList<AbstractObject> otherTarget){
 		AbstractObject movementGoal = null;
 		double shortDistance = Double.MAX_VALUE;
 		
@@ -142,8 +148,11 @@ public class Actions {
 			for(Asteroid asteroid : space.getAsteroids()){
 				if(asteroid.isMineable() 
 						&& space.findShortestDistance(asteroid.getPosition(), ship.getPosition()) < shortDistance
-						&& space.getObjectById(otherTarget.getId()).getPosition() != asteroid.getPosition()){
+						&& otherTarget.indexOf(asteroid) == -1){
 					shortDistance = space.findShortestDistance(asteroid.getPosition(), ship.getPosition());
+					movementGoal = asteroid;
+				}
+				else if(asteroid.isMineable()){
 					movementGoal = asteroid;
 				}
 			}
