@@ -19,6 +19,7 @@ import spacesettlers.graphics.StarGraphics;
 import spacesettlers.objects.AbstractActionableObject;
 import spacesettlers.objects.AbstractObject;
 import spacesettlers.objects.Ship;
+import spacesettlers.objects.Base;
 import spacesettlers.objects.powerups.SpaceSettlersPowerupEnum;
 import spacesettlers.objects.resources.ResourcePile;
 import spacesettlers.objects.weapons.Missile;
