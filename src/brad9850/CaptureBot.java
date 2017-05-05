@@ -18,8 +18,6 @@ import spacesettlers.graphics.SpacewarGraphics;
 import spacesettlers.graphics.StarGraphics;
 import spacesettlers.objects.AbstractActionableObject;
 import spacesettlers.objects.AbstractObject;
-import spacesettlers.objects.Base;
-import spacesettlers.objects.Flag;
 import spacesettlers.objects.Ship;
 import spacesettlers.objects.powerups.SpaceSettlersPowerupEnum;
 import spacesettlers.objects.resources.ResourcePile;
@@ -37,10 +35,6 @@ import spacesettlers.utilities.Position;
 public class CaptureBot extends TeamClient {
 	boolean shouldShoot = false;
 	
-	UUID targetID = null;
-	ArrayList<Position> path = new ArrayList<Position>();
-	
-	int lastTimestep = 0;
 	private ArrayList<SpacewarGraphics> graphicsToAdd;
 	
 	//Magic numbers
@@ -48,17 +42,14 @@ public class CaptureBot extends TeamClient {
 	public final int PathingFrequency = 25;
 	public final boolean Drawing = true;
 	
-	Position previousPosition = null;
-	UUID previousMovementTargetID = null;
-	
-	int sum = 0;
-	int count = 0;
-	int previousTimestep = 0;
-	
+	//Arrays for handling multiple ships
 	ArrayList<UUID> ships = new ArrayList<UUID>();
 	HashMap<UUID,ArrayList<Position>> paths = new HashMap<UUID,ArrayList<Position>>();
 	ArrayList<AbstractObject> targets = new ArrayList<AbstractObject>();
+	ArrayList<Integer> lastPathfindTimestep = new ArrayList<Integer>();
+	ArrayList<UUID> previousMovementTargetIDs = new ArrayList<UUID>();
 	UUID currentShip = null;
+	int currentShipIndex = -1;
 	/**
 	 * 
 	 */
@@ -71,15 +62,16 @@ public class CaptureBot extends TeamClient {
 			if (actionable instanceof Ship) {
 				Ship ship = (Ship) actionable;
 				
-				UUID tempShip = ship.getId();
-				if(ships.indexOf(tempShip) == -1){
-					ships.add(tempShip);
-					paths.put(tempShip, null);
+				currentShip = ship.getId();
+				if(ships.indexOf(currentShip) == -1){
+					this.ships.add(currentShip);
+					this.paths.put(currentShip, new ArrayList<Position>());
 					this.targets.add(null);
+					this.lastPathfindTimestep.add(0);
+					this.previousMovementTargetIDs.add(null);
 				}
-				else{
-					actions.put(tempShip, getAction(space,ship));
-				}	
+				currentShipIndex = ships.indexOf(currentShip);
+				actions.put(currentShip, getAction(space,ship));
 			} else {
 				// it is a base.  Heuristically decide when to use the shield (TODO)
 				actions.put(actionable.getId(), new DoNothingAction());
@@ -102,41 +94,29 @@ public class CaptureBot extends TeamClient {
 
 		//Find a default place to move to.
 		AbstractObject movementGoal = Combat.nearestBeacon(space, ship);
-		boolean solidGoal = false;
+		boolean solidGoal = false;		
 		
 		//Pick somewhere to go to
-		//Go to either the flag or the base
-		if(ship.isCarryingFlag()){
-			//If we're carrying the flag, return to base
-			for(Base base : space.getBases()){
-				if(base.getTeamName().equalsIgnoreCase(ship.getTeamName())){
-					movementGoal = base;
-					solidGoal = true;
-				}
-			}
-		}	
-		else{
-			//If we're not carrying the flag, hunt it down
-			for(Flag flag : space.getFlags()){
-				if(!flag.getTeamName().equalsIgnoreCase(ship.getTeamName())){
-					movementGoal = flag;
-				}
-			}
-		}
+		System.out.println("New ship");
+		System.out.println(currentShipIndex);
+		movementGoal = Actions.getActions(space, this.ships, ship.getId(), this.targets);
+		//Let the other ships know where we're going
+		this.targets.set(currentShipIndex, movementGoal);
 		
 		//See if our goal has changed, to know whether to make a new path
 		boolean goalChanged = false;
-		if(movementGoal.getId() != this.previousMovementTargetID){
+		if(movementGoal.getId() != previousMovementTargetIDs.get(currentShipIndex)){
 			goalChanged = true;
 		}
 		
+		//Draw what we need to
 		if(Drawing){
 			drawPath(space, ship);
 		}
 		
-		//Choose where to go to
+		//Figure out how to get to our destination
 		newAction = getMovementAction(space, ship, movementGoal.getPosition(), solidGoal, goalChanged);
-		this.previousMovementTargetID = movementGoal.getId();
+		previousMovementTargetIDs.set(currentShipIndex, movementGoal.getId());
 		
 		return newAction;
 	}
@@ -151,29 +131,29 @@ public class CaptureBot extends TeamClient {
 			//If the path to the goal is clear, go straight there
 			movementAction = Vectoring.advancedMovementVector(space, ship, goalPosition, solidGoal, distanceFactor);
 			//We don't need this functionally, but it does fix drawing the path
-			this.path.clear();
-			this.path.add(goalPosition);
+			this.paths.get(currentShip).clear();
+			this.paths.get(currentShip).add(goalPosition);
 		}
 		else{
 			//Otherwise, make a path towards the target
 			
 			//If it's time to generate a new path, do it
-			if(space.getCurrentTimestep() - this.lastTimestep > PathingFrequency
-					|| this.path.size() == 0
+			if(space.getCurrentTimestep() - this.lastPathfindTimestep.get(currentShipIndex) > PathingFrequency
+					|| this.paths.get(currentShip).size() == 0
 					|| goalChanged){
-				this.lastTimestep = space.getCurrentTimestep();
-				this.path = Pathing.findPath(space, ship, goalPosition);
+				this.lastPathfindTimestep.set(currentShipIndex, space.getCurrentTimestep());
+				this.paths.put(currentShip, Pathing.findPath(space, ship, goalPosition));
 			}
 
 			//Get a waypoint to move to
 			//If we're already really close to it, find the next target
-			Position waypoint = this.path.get(0);
+			Position waypoint = this.paths.get(currentShip).get(0);
 			boolean solidWaypoint = false;
 			while(waypoint != null && space.findShortestDistance(ship.getPosition(), waypoint) < ship.getRadius() * 2){
-				this.path.remove(0);
+				this.paths.get(currentShip).remove(0);
 				waypoint = null;
-				if(this.path.size() > 0){
-					waypoint = this.path.get(0);
+				if(this.paths.get(currentShip).size() > 0){
+					waypoint = this.paths.get(currentShip).get(0);
 				}
 			}
 			
@@ -190,27 +170,27 @@ public class CaptureBot extends TeamClient {
 		return movementAction;
 	}
 	
-	/**
-	 * Get a target to hunt
-	 * @param space
-	 * @param ship
-	 * @return
-	 */
-	private UUID findTarget(Toroidal2DPhysics space, Ship ship){
-		return Combat.nearestEnemy(space, ship).getId();
-	}
-	
-	/**
-	 * See if we should still chase our current target
-	 * @param space
-	 * @param targetID
-	 * @return
-	 */
-	private boolean isValidTarget(Toroidal2DPhysics space, UUID targetID){
-		return (targetID != null
-				&& space.getObjectById(targetID) != null
-				&& space.getObjectById(targetID).isAlive());
-	}
+//	/**
+//	 * Get a target to hunt
+//	 * @param space
+//	 * @param ship
+//	 * @return
+//	 */
+//	private UUID findTarget(Toroidal2DPhysics space, Ship ship){
+//		return Combat.nearestEnemy(space, ship).getId();
+//	}
+//	
+//	/**
+//	 * See if we should still chase our current target
+//	 * @param space
+//	 * @param targetID
+//	 * @return
+//	 */
+//	private boolean isValidTarget(Toroidal2DPhysics space, UUID targetID){
+//		return (targetID != null
+//				&& space.getObjectById(targetID) != null
+//				&& space.getObjectById(targetID).isAlive());
+//	}
 	
 	/**
 	 * Draw a line directly connecting the ship and its target, and a bunch of lines connecting the path nodes between the two
@@ -219,26 +199,26 @@ public class CaptureBot extends TeamClient {
 	 */
 	private void drawPath(Toroidal2DPhysics space, Ship ship){
 		//Don't try to draw a path that doesn't exist
-		if(path.size() == 0){
+		if(this.paths.get(currentShip).size() == 0){
 			return;
 		}
 		
 		Position shipPosition = ship.getPosition();
-		Position targetPosition = this.path.get(this.path.size() - 1);
+		Position targetPosition = this.paths.get(currentShip).get(this.paths.get(currentShip).size() - 1);
 		
 		LineGraphics targetLine = new LineGraphics(shipPosition, targetPosition, space.findShortestDistanceVector(shipPosition, targetPosition));
 		targetLine.setLineColor(Color.RED);
 		graphicsToAdd.add(targetLine);
 		
-		for(int i = 0; i < path.size(); i++){
+		for(int i = 0; i < this.paths.get(currentShip).size(); i++){
 			//TODO: Solve root cause of this, and of all evil
 //			if(space.getObjectById(path.get(i)) == null){
 //				break;
 //			}
-			Position thisPosition = path.get(i);
+			Position thisPosition = this.paths.get(currentShip).get(i);
 			Position previousPosition = ship.getPosition();
 			if(i > 0){
-				previousPosition = path.get(i - 1);
+				previousPosition = this.paths.get(currentShip).get(i - 1);
 			}
 			
 			graphicsToAdd.add(new StarGraphics(3, Color.WHITE, thisPosition));
