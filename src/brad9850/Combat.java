@@ -129,6 +129,22 @@ public class Combat {
 	}
 	
 	/**
+	 * See whether an object is your enemy
+	 * @param target
+	 * @param ship
+	 * @return
+	 */
+	public static boolean isEnemy(AbstractObject target, Ship ship){
+		if(target instanceof AbstractActionableObject){
+			AbstractActionableObject targetShip = (AbstractActionableObject) target;
+			if(!ship.getTeamName().equalsIgnoreCase(targetShip.getTeamName())){
+				return true;
+			}
+		}
+		return false;
+	}
+	
+	/**
 	 * checks the base for an enemy
 	 * 
 	 * @param space

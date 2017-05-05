@@ -127,7 +127,7 @@ public class CaptureBot extends TeamClient {
 		}
 		
 		//Decide if we should shoot
-		if (movementGoal instanceof Ship
+		if (Combat.isEnemy(movementGoal, ship)
 				&& Combat.willMakeItToTarget(space, ship, movementGoal, movementGoal.getPosition().getTranslationalVelocity())) {
 			shouldShoot.set(currentShipIndex, true);
 		} else {
