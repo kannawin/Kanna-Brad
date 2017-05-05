@@ -22,14 +22,13 @@ import spacesettlers.simulator.Toroidal2DPhysics;
 public class Actions {
 	public static AbstractObject getActions(Toroidal2DPhysics space, ArrayList<UUID> ships, UUID ship, ArrayList<AbstractObject> otherTargets){
 		AbstractObject actionList = space.getObjectById(ship);
-		
 		Ship currentShip = (Ship) space.getObjectById(ship);
 		switch(ships.indexOf(ship)){
 			case 0: //flag bearer 
 				actionList = flagBearer(space,currentShip);
 				break;	
 			case 1: //defender #1
-				actionList = defender(space,currentShip);
+				actionList = defender(space,currentShip,otherTargets);
 				break;
 			case 2: //resource gatherer #1
 				actionList = gatherer(space,currentShip,otherTargets);
@@ -41,7 +40,7 @@ public class Actions {
 				actionList = gatherer(space,currentShip,otherTargets);
 				break;
 			case 5: //defender #2
-				actionList = defender(space,currentShip);
+				actionList = defender(space,currentShip,otherTargets);
 				break;
 		}
 	
@@ -79,7 +78,7 @@ public class Actions {
 	
 	//will return the shortest target to the ship on our half of the map
 	//all defenders can attack the same target as there will be no conflicts
-	public static AbstractObject defender(Toroidal2DPhysics space, Ship ship){
+	public static AbstractObject defender(Toroidal2DPhysics space, Ship ship, ArrayList<AbstractObject> otherTargets){
 		int halfMin = 0;
 		int halfMax = space.getWidth() / 2;
 		AbstractObject returnTarget = null;
@@ -122,7 +121,7 @@ public class Actions {
 		}
 		//if there is nothing on our half, go for a resource
 		if(returnTarget == null){
-			returnTarget = gatherer(space,ship,null);
+			returnTarget = gatherer(space,ship,otherTargets);
 		}
 			
 		return returnTarget;
@@ -147,13 +146,18 @@ public class Actions {
 			shortDistance = Double.MAX_VALUE;
 			for(Asteroid asteroid : space.getAsteroids()){
 				if(asteroid.isMineable() 
-						&& space.findShortestDistance(asteroid.getPosition(), ship.getPosition()) < shortDistance
-						){
-					shortDistance = space.findShortestDistance(asteroid.getPosition(), ship.getPosition());
-					movementGoal = asteroid;
-				}
-				else if(asteroid.isMineable()){
-					movementGoal = asteroid;
+						&& space.findShortestDistance(asteroid.getPosition(), ship.getPosition()) < shortDistance){
+					boolean skip = false;
+					for(int i = 0; i < otherTarget.size(); i++){
+						if(asteroid.getPosition() == otherTarget.get(i).getPosition()){
+							skip = true;
+							break;
+						}
+					}
+					if(!skip){
+						shortDistance = space.findShortestDistance(asteroid.getPosition(), ship.getPosition());
+						movementGoal = asteroid;
+					}
 				}
 			}
 		}
