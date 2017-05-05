@@ -21,6 +21,7 @@ import spacesettlers.objects.AbstractObject;
 import spacesettlers.objects.Asteroid;
 import spacesettlers.objects.Ship;
 import spacesettlers.objects.Base;
+import spacesettlers.objects.powerups.PowerupDoubleHealingBaseEnergy;
 import spacesettlers.objects.powerups.SpaceSettlersPowerupEnum;
 import spacesettlers.objects.resources.ResourcePile;
 import spacesettlers.objects.weapons.Missile;
@@ -195,18 +196,18 @@ public class CaptureBot extends TeamClient {
 	}
 	
 	//Figure out what we should buy next
-	private PurchaseTypes decideNextPurchase(Toroidal2DPhysics space, AbstractActionableObject object){
+	private PurchaseTypes decideNextPurchase(Toroidal2DPhysics space, String teamName){
 		//Count the number of friendly ships/bases
 		int shipCount = 0;
 		int baseCount = 0;
 		
 		for(Ship ship : space.getShips()){
-			if(ship.getTeamName().equalsIgnoreCase(object.getTeamName())){
+			if(ship.getTeamName().equalsIgnoreCase(teamName)){
 				shipCount += 1;
 			}
 		}
 		for(Base base : space.getBases()){
-			if(base.getTeamName().equalsIgnoreCase(object.getTeamName())){
+			if(base.getTeamName().equalsIgnoreCase(teamName)){
 				baseCount += 1;
 			}
 		}
@@ -241,7 +242,7 @@ public class CaptureBot extends TeamClient {
 	//Plan what to buy next and what asteroids to mine to buy it
 	private ArrayList<Asteroid> planPurchases(Toroidal2DPhysics space, Base base){
 		//See how much the next thing we need to buy costs
-		ResourcePile nextPurchaseCost = lastPurchaseCost.getCost(decideNextPurchase(space, base));
+		ResourcePile nextPurchaseCost = lastPurchaseCost.getCost(decideNextPurchase(space, base.getTeamName()));
 		//Reduce the price by what we already have
 		nextPurchaseCost.subtract(base.getTeam().getAvailableResources());
 		for(Ship ship : space.getShips()){
@@ -393,13 +394,12 @@ public class CaptureBot extends TeamClient {
 			PurchaseCosts purchaseCosts) {
 
 		HashMap<UUID, PurchaseTypes> purchases = new HashMap<UUID, PurchaseTypes>();
-		
-		//if you can afford something worthwhile (ship or base)
-		if(purchaseCosts.canAfford(PurchaseTypes.SHIP, resourcesAvailable)
-				|| purchaseCosts.canAfford(PurchaseTypes.BASE, resourcesAvailable)){
-			//will buy ship if its the cheapest option
-			boolean buyShip = purchaseCosts.canAfford(PurchaseTypes.SHIP, resourcesAvailable);
-			if(buyShip){
+
+		this.lastPurchaseCost = purchaseCosts;
+		PurchaseTypes nextPurchase = decideNextPurchase(space, actionableObjects.iterator().next().getTeamName());
+		if(purchaseCosts.canAfford(nextPurchase, resourcesAvailable)){
+			//Purchasing a ship
+			if(nextPurchase == PurchaseTypes.SHIP){
 				for(AbstractActionableObject actionableObject : actionableObjects){
 					if(actionableObject instanceof Base){
 						Base base = (Base) actionableObject;
@@ -407,30 +407,55 @@ public class CaptureBot extends TeamClient {
 					}
 				}
 			}
-			//else base will be bought
-			else{
+			//Purchasing a base
+			else if (nextPurchase == PurchaseTypes.BASE) {
 				boolean canplace = true;
-				for(AbstractActionableObject actionableObject : actionableObjects){
-					if(actionableObject instanceof Ship && actionableObject.getId() == this.ships.get(0)){
-						//base can only be bought if its within a certain distance from another base
-						for(AbstractActionableObject actionableObject2 : actionableObjects){
-							if(actionableObject2 instanceof Base){
-								if(space.findShortestDistance(actionableObject2.getPosition(), space.getObjectById(this.ships.get(0)).getPosition()) < 250){
+				for (AbstractActionableObject actionableObject : actionableObjects) {
+					if (actionableObject instanceof Ship && actionableObject.getId() == this.ships.get(0)) {
+						// base can only be bought if its within a certain
+						// distance from another base
+						for (AbstractActionableObject actionableObject2 : actionableObjects) {
+							if (actionableObject2 instanceof Base) {
+								if (space.findShortestDistance(actionableObject2.getPosition(),
+										space.getObjectById(this.ships.get(0)).getPosition()) < 250) {
 									canplace = false;
 									break;
 								}
 							}
 						}
-						if(canplace){
+						if (canplace) {
 							Ship ship = (Ship) actionableObject;
 							purchases.put(ship.getId(), PurchaseTypes.BASE);
+							break;
 						}
 					}
 				}
 			}
+			//Purchasing faster regeneration
+			else if (nextPurchase == PurchaseTypes.POWERUP_DOUBLE_BASE_HEALING_SPEED){
+				//Boost our main base first
+				Base firstBase = null;
+				boolean powerupBought = false;
+				for(AbstractActionableObject actionableObject : actionableObjects){
+					if(actionableObject instanceof Base){
+						Base base = (Base) actionableObject;
+						if(base.isHomeBase()){
+							if(!base.getCurrentPowerups().contains(SpaceSettlersPowerupEnum.DOUBLE_BASE_HEALING_SPEED)){
+								purchases.put(base.getId(), PurchaseTypes.POWERUP_DOUBLE_BASE_HEALING_SPEED);
+								powerupBought = true;
+							}
+						}
+						else if(firstBase != null){
+							firstBase = base;
+						}
+					}
+				}
+				if(!powerupBought){
+					purchases.put(firstBase.getId(), PurchaseTypes.POWERUP_DOUBLE_BASE_HEALING_SPEED);
+				}
+			}
+			
 		}
-		
-		this.lastPurchaseCost = purchaseCosts;
 
 		return purchases;
 	}
