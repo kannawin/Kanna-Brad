@@ -61,10 +61,11 @@ public class CaptureBot extends TeamClient {
 	/**
 	 * 
 	 */
-	public Map<UUID, AbstractAction> getMovementStart(Toroidal2DPhysics space,
-			Set<AbstractActionableObject> actionableObjects) {
+	public Map<UUID, AbstractAction> getMovementStart(Toroidal2DPhysics space, Set<AbstractActionableObject> actionableObjects) {
 		HashMap<UUID, AbstractAction> actions = new HashMap<UUID, AbstractAction>();
 		graphicsToAdd = new ArrayList<SpacewarGraphics>();
+		//Generate the current state
+		PlanState teamState = new PlanState(space, actionableObjects.iterator().next().getTeamName());
 		// loop through each ship
 		for (AbstractObject actionable :  actionableObjects) {
 			if (actionable instanceof Ship) {
