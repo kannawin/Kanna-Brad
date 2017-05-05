@@ -262,7 +262,7 @@ public class CaptureBot extends TeamClient {
 
 	@Override
 	/**
-	 * Never buy anything
+	 * Buy things sometimes
 	 */
 	public Map<UUID, PurchaseTypes> getTeamPurchases(Toroidal2DPhysics space,
 			Set<AbstractActionableObject> actionableObjects, 
@@ -270,10 +270,46 @@ public class CaptureBot extends TeamClient {
 			PurchaseCosts purchaseCosts) {
 
 		HashMap<UUID, PurchaseTypes> purchases = new HashMap<UUID, PurchaseTypes>();
-
+		
+		//if you can afford something worthwhile (ship or base)
+		if(purchaseCosts.canAfford(PurchaseTypes.SHIP, resourcesAvailable)
+				|| purchaseCosts.canAfford(PurchaseTypes.BASE, resourcesAvailable)){
+			//will buy ship if its the cheapest option
+			boolean buyShip = purchaseCosts.getCost(PurchaseTypes.BASE).greaterThan(purchaseCosts.getCost(PurchaseTypes.SHIP));
+			if(buyShip){
+				for(AbstractActionableObject actionableObject : actionableObjects){
+					if(actionableObject instanceof Base){
+						Base base = (Base) actionableObject;
+						purchases.put(base.getId(), PurchaseTypes.SHIP);
+					}
+				}
+			}
+			//else base will be bought
+			else{
+				boolean canplace = true;
+				for(AbstractActionableObject actionableObject : actionableObjects){
+					if(actionableObject instanceof Ship && actionableObject.getId() == this.ships.get(0)){
+						//base can only be bought if its within a certain distance from another base
+						for(AbstractActionableObject actionableObject2 : actionableObjects){
+							if(actionableObject2 instanceof Base){
+								if(space.findShortestDistance(actionableObject2.getPosition(), space.getObjectById(this.ships.get(0)).getPosition()) < 250){
+									canplace = false;
+									break;
+								}
+							}
+						}
+						if(canplace){
+							Ship ship = (Ship) actionableObject;
+							purchases.put(ship.getId(), PurchaseTypes.BASE);
+						}
+					}
+				}
+			}
+		}
 
 		return purchases;
 	}
+
 
 	/**
 	 * Shoot whenever we can.
