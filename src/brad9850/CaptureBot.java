@@ -32,9 +32,7 @@ import spacesettlers.utilities.Position;
  * 
  * @author Christopher Bradford & Scott Kannawin
  */
-public class CaptureBot extends TeamClient {
-	boolean shouldShoot = false;
-	
+public class CaptureBot extends TeamClient {	
 	private ArrayList<SpacewarGraphics> graphicsToAdd;
 	
 	//Magic numbers
@@ -48,7 +46,9 @@ public class CaptureBot extends TeamClient {
 	ArrayList<AbstractObject> targets = new ArrayList<AbstractObject>();
 	ArrayList<Integer> lastPathfindTimestep = new ArrayList<Integer>();
 	ArrayList<UUID> previousMovementTargetIDs = new ArrayList<UUID>();
-	UUID currentShip = null;
+	ArrayList<Boolean> shouldShoot = new ArrayList<Boolean>();
+	
+	UUID currentShipID = null;
 	int currentShipIndex = -1;
 	/**
 	 * 
@@ -62,16 +62,17 @@ public class CaptureBot extends TeamClient {
 			if (actionable instanceof Ship) {
 				Ship ship = (Ship) actionable;
 				
-				currentShip = ship.getId();
-				if(ships.indexOf(currentShip) == -1){
-					this.ships.add(currentShip);
-					this.paths.put(currentShip, new ArrayList<Position>());
+				currentShipID = ship.getId();
+				if(ships.indexOf(currentShipID) == -1){
+					this.ships.add(currentShipID);
+					this.paths.put(currentShipID, new ArrayList<Position>());
 					this.targets.add(null);
 					this.lastPathfindTimestep.add(0);
 					this.previousMovementTargetIDs.add(null);
+					this.shouldShoot.add(false);
 				}
-				currentShipIndex = ships.indexOf(currentShip);
-				actions.put(currentShip, getAction(space,ship));
+				currentShipIndex = ships.indexOf(currentShipID);
+				actions.put(currentShipID, getAction(space,ship));
 			} else {
 				// it is a base.  Heuristically decide when to use the shield (TODO)
 				actions.put(actionable.getId(), new DoNothingAction());
@@ -107,6 +108,14 @@ public class CaptureBot extends TeamClient {
 			goalChanged = true;
 		}
 		
+		//Decide if we should shoot	
+		if (movementGoal instanceof Ship &&
+				Combat.willMakeItToTarget(space, ship, movementGoal, movementGoal.getPosition().getTranslationalVelocity())) {
+			shouldShoot.set(currentShipIndex, true);
+		} else {
+			shouldShoot.set(currentShipIndex, false);
+		}
+		
 		//Draw what we need to
 		if(Drawing){
 			drawPath(space, ship);
@@ -129,29 +138,29 @@ public class CaptureBot extends TeamClient {
 			//If the path to the goal is clear, go straight there
 			movementAction = Vectoring.advancedMovementVector(space, ship, goalPosition, solidGoal, distanceFactor);
 			//We don't need this functionally, but it does fix drawing the path
-			this.paths.get(currentShip).clear();
-			this.paths.get(currentShip).add(goalPosition);
+			this.paths.get(currentShipID).clear();
+			this.paths.get(currentShipID).add(goalPosition);
 		}
 		else{
 			//Otherwise, make a path towards the target
 			
 			//If it's time to generate a new path, do it
 			if(space.getCurrentTimestep() - this.lastPathfindTimestep.get(currentShipIndex) > PathingFrequency
-					|| this.paths.get(currentShip).size() == 0
+					|| this.paths.get(currentShipID).size() == 0
 					|| goalChanged){
 				this.lastPathfindTimestep.set(currentShipIndex, space.getCurrentTimestep());
-				this.paths.put(currentShip, Pathing.findPath(space, ship, goalPosition));
+				this.paths.put(currentShipID, Pathing.findPath(space, ship, goalPosition));
 			}
 
 			//Get a waypoint to move to
 			//If we're already really close to it, find the next target
-			Position waypoint = this.paths.get(currentShip).get(0);
+			Position waypoint = this.paths.get(currentShipID).get(0);
 			boolean solidWaypoint = false;
 			while(waypoint != null && space.findShortestDistance(ship.getPosition(), waypoint) < ship.getRadius() * 2){
-				this.paths.get(currentShip).remove(0);
+				this.paths.get(currentShipID).remove(0);
 				waypoint = null;
-				if(this.paths.get(currentShip).size() > 0){
-					waypoint = this.paths.get(currentShip).get(0);
+				if(this.paths.get(currentShipID).size() > 0){
+					waypoint = this.paths.get(currentShipID).get(0);
 				}
 			}
 			
@@ -197,26 +206,26 @@ public class CaptureBot extends TeamClient {
 	 */
 	private void drawPath(Toroidal2DPhysics space, Ship ship){
 		//Don't try to draw a path that doesn't exist
-		if(this.paths.get(currentShip).size() == 0){
+		if(this.paths.get(currentShipID).size() == 0){
 			return;
 		}
 		
 		Position shipPosition = ship.getPosition();
-		Position targetPosition = this.paths.get(currentShip).get(this.paths.get(currentShip).size() - 1);
+		Position targetPosition = this.paths.get(currentShipID).get(this.paths.get(currentShipID).size() - 1);
 		
 		LineGraphics targetLine = new LineGraphics(shipPosition, targetPosition, space.findShortestDistanceVector(shipPosition, targetPosition));
 		targetLine.setLineColor(Color.RED);
 		graphicsToAdd.add(targetLine);
 		
-		for(int i = 0; i < this.paths.get(currentShip).size(); i++){
+		for(int i = 0; i < this.paths.get(currentShipID).size(); i++){
 			//TODO: Solve root cause of this, and of all evil
 //			if(space.getObjectById(path.get(i)) == null){
 //				break;
 //			}
-			Position thisPosition = this.paths.get(currentShip).get(i);
+			Position thisPosition = this.paths.get(currentShipID).get(i);
 			Position previousPosition = ship.getPosition();
 			if(i > 0){
-				previousPosition = this.paths.get(currentShip).get(i - 1);
+				previousPosition = this.paths.get(currentShipID).get(i - 1);
 			}
 			
 			graphicsToAdd.add(new StarGraphics(3, Color.WHITE, thisPosition));
@@ -278,26 +287,33 @@ public class CaptureBot extends TeamClient {
 			Set<AbstractActionableObject> actionableObjects) {
 		HashMap<UUID, SpaceSettlersPowerupEnum> powerUps = new HashMap<UUID, SpaceSettlersPowerupEnum>();
 
-		for (AbstractActionableObject actionableObject : actionableObjects){
-			SpaceSettlersPowerupEnum powerup = SpaceSettlersPowerupEnum.FIRE_MISSILE;
-			
-			
-			//Shoot less often when we're moving fast to prevent our bullets from colliding with each other
-			//TODO: Only limit this if we're aiming in the same direction we're traveling
-			double vx = actionableObject.getPosition().getxVelocity();
-			double vy = actionableObject.getPosition().getyVelocity();
-			double shipSpeed = Math.sqrt(vx * vx + vy * vy);
-			int shootingDelay = 2 + (int)((shipSpeed - 15)/15);
-			
-			//If the ship is close to going as fast as a missile, don't shoot
-			if(shipSpeed + 10 > Missile.INITIAL_VELOCITY){
-				shootingDelay = Integer.MAX_VALUE;
-			}
-			
-			boolean bulletsWontCollide = space.getCurrentTimestep() % shootingDelay == 0;
-			
-			if (actionableObject.isValidPowerup(powerup) && shouldShoot && bulletsWontCollide){
-				powerUps.put(actionableObject.getId(), powerup);
+		for (AbstractActionableObject actionableObject : actionableObjects) {
+			if (actionableObject instanceof Ship) {
+				Ship ship = (Ship) actionableObject;
+				int shipIndex = ships.indexOf(ship.getId());
+				
+				SpaceSettlersPowerupEnum powerup = SpaceSettlersPowerupEnum.FIRE_MISSILE;
+
+				// Shoot less often when we're moving fast to prevent our
+				// bullets from colliding with each other
+				// TODO: Only limit this if we're aiming in the same direction
+				// we're traveling
+				double vx = ship.getPosition().getxVelocity();
+				double vy = ship.getPosition().getyVelocity();
+				double shipSpeed = Math.sqrt(vx * vx + vy * vy);
+				int shootingDelay = 2 + (int) ((shipSpeed - 15) / 15);
+
+				// If the ship is close to going as fast as a missile, don't
+				// shoot
+				if (shipSpeed + 10 > Missile.INITIAL_VELOCITY) {
+					shootingDelay = Integer.MAX_VALUE;
+				}
+
+				boolean bulletsWontCollide = space.getCurrentTimestep() % shootingDelay == 0;
+				
+				if (ship.isValidPowerup(powerup) && this.shouldShoot.get(shipIndex) && bulletsWontCollide) {
+					powerUps.put(ship.getId(), powerup);
+				}
 			}
 		}
 		
