@@ -24,30 +24,36 @@ import spacesettlers.utilities.Position;
  */
 public class Actions {
 	public static AbstractObject getActions(Toroidal2DPhysics space, ArrayList<UUID> ships, UUID ship, ArrayList<Asteroid> bestAsteroids, ArrayList<AbstractObject> otherTargets){
-		AbstractObject actionList = space.getObjectById(ship);
+		AbstractObject actionTarget = space.getObjectById(ship);
 		Ship currentShip = (Ship) space.getObjectById(ship);
+		
+		//Let any ship return the flag if they happen to be carrying it
+		if(currentShip.isCarryingFlag()){
+			return flagBearer(space, currentShip);
+		}
+		//Otherwise, let them do their predetermined roles
 		switch(ships.indexOf(ship)){
 			case 0: //flag bearer #1
-				actionList = flagBearer(space,currentShip);
+				actionTarget = flagBearer(space,currentShip);
 				break;	
 			case 1: //flag bearer #2
-				actionList = flagBearer(space,currentShip);
+				actionTarget = flagBearer(space,currentShip);
 				break;
 			case 2: //resource gatherer #1
-				actionList = gatherer(space,currentShip,bestAsteroids,otherTargets);
+				actionTarget = gatherer(space,currentShip,bestAsteroids,otherTargets);
 				break;
 			case 3: //resource gatherer #2
-				actionList = gatherer(space,currentShip,bestAsteroids,otherTargets);
+				actionTarget = gatherer(space,currentShip,bestAsteroids,otherTargets);
 				break;
 			case 4: //defender
-				actionList = defender(space,currentShip,bestAsteroids,otherTargets);
+				actionTarget = defender(space,currentShip,bestAsteroids,otherTargets);
 				break;
 			case 5: //harasser
-				actionList = Combat.nearestEnemy(space, currentShip);
+				actionTarget = Combat.nearestEnemy(space, currentShip);
 				break;
 		}
 	
-		return actionList;
+		return actionTarget;
 	}
 	
 	//Figures the location for the flag, or return base of the ship if it has the flag
