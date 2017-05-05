@@ -2,6 +2,7 @@ package brad9850;
 
 import java.awt.Color;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.UUID;
 
 import spacesettlers.objects.AbstractObject;
@@ -22,7 +23,7 @@ import spacesettlers.utilities.Position;
  *
  */
 public class Actions {
-	public static AbstractObject getActions(Toroidal2DPhysics space, ArrayList<UUID> ships, UUID ship, ArrayList<AbstractObject> otherTargets){
+	public static AbstractObject getActions(Toroidal2DPhysics space, ArrayList<UUID> ships, UUID ship, ArrayList<Asteroid> bestAsteroids, ArrayList<AbstractObject> otherTargets){
 		AbstractObject actionList = space.getObjectById(ship);
 		Ship currentShip = (Ship) space.getObjectById(ship);
 		switch(ships.indexOf(ship)){
@@ -33,13 +34,13 @@ public class Actions {
 				actionList = flagBearer(space,currentShip);
 				break;
 			case 2: //resource gatherer #1
-				actionList = gatherer(space,currentShip,otherTargets);
+				actionList = gatherer(space,currentShip,bestAsteroids,otherTargets);
 				break;
-			case 3: //defender
-				actionList = defender(space,currentShip,otherTargets);
+			case 3: //resource gatherer #2
+				actionList = gatherer(space,currentShip,bestAsteroids,otherTargets);
 				break;
-			case 4: //resource gatherer #2
-				actionList = gatherer(space,currentShip,otherTargets);
+			case 4: //defender
+				actionList = defender(space,currentShip,bestAsteroids,otherTargets);
 				break;
 			case 5: //harasser
 				actionList = Combat.nearestEnemy(space, currentShip);
@@ -100,7 +101,7 @@ public class Actions {
 	
 	//will return the shortest target to the ship on our half of the map, prioritizing ships carrying flags
 	//all defenders can attack the same target as there will be no conflicts
-	public static AbstractObject defender(Toroidal2DPhysics space, Ship ship, ArrayList<AbstractObject> otherTargets){
+	public static AbstractObject defender(Toroidal2DPhysics space, Ship ship, ArrayList<Asteroid> bestAsteroids, ArrayList<AbstractObject> otherTargets){
 		int halfMin = 0;
 		int halfMax = space.getWidth() / 2;
 		AbstractObject target = null;
@@ -149,17 +150,16 @@ public class Actions {
 		}
 		//if there is nothing on our half, go for a resource
 		if(target == null){
-			target = gatherer(space,ship,otherTargets);
+			target = gatherer(space, ship, bestAsteroids, otherTargets);
 		}
 			
 		return target;
 	}
 	
 	//determines for a gatherer ship to get a resource closest to the base
-	public static AbstractObject gatherer(Toroidal2DPhysics space, Ship ship, ArrayList<AbstractObject> otherTarget){
+	public static AbstractObject gatherer(Toroidal2DPhysics space, Ship ship, ArrayList<Asteroid> bestAsteroids, ArrayList<AbstractObject> otherTarget){
 		AbstractObject movementGoal = null;
 		double shortDistance = Double.MAX_VALUE;
-		
 		//get the base closest to the ship
 		for(Base base : space.getBases()){
 			if(base.getTeamName().equalsIgnoreCase(ship.getTeamName())
@@ -168,28 +168,37 @@ public class Actions {
 				movementGoal = base;
 			}
 		}
-		
-		//if total number of resources is less than 500, go for a mineable asteroid
-		if(ship.getResources().getTotal() < 500){
-			shortDistance = Double.MAX_VALUE;
-			for(Asteroid asteroid : space.getAsteroids()){
-				if(asteroid.isMineable() 
-						&& space.findShortestDistance(asteroid.getPosition(), ship.getPosition()) < shortDistance){
-					boolean skip = false;
-					for(int i = 0; i < otherTarget.size(); i++){
-						if(asteroid.getPosition() == otherTarget.get(i).getPosition()){
-							skip = true;
-							break;
-						}
-					}
-					if(!skip){
-						shortDistance = space.findShortestDistance(asteroid.getPosition(), ship.getPosition());
-						movementGoal = asteroid;
-					}
-				}
+
+		//if total number of resources is less than 1000, go for a mineable asteroid
+		if (ship.getResources().getTotal() < 1000) {
+			movementGoal = findClosestFreeAsteroid(space, ship, bestAsteroids, otherTarget);
+			if (movementGoal == null) {
+				movementGoal = findClosestFreeAsteroid(space, ship, space.getAsteroids(), otherTarget);
 			}
 		}
 		
+		return movementGoal;
+	}
+	
+	private static Asteroid findClosestFreeAsteroid(Toroidal2DPhysics space, Ship ship, Collection<Asteroid> asteroids, ArrayList<AbstractObject> otherTarget){
+		Asteroid movementGoal = null;
+		double shortDistance = Double.MAX_VALUE;
+		for (Asteroid asteroid : asteroids) {
+			if (asteroid.isMineable()
+					&& space.findShortestDistance(asteroid.getPosition(), ship.getPosition()) < shortDistance) {
+				boolean skip = false;
+				for (int i = 0; i < otherTarget.size(); i++) {
+					if (asteroid.getPosition() == otherTarget.get(i).getPosition()) {
+						skip = true;
+						break;
+					}
+				}
+				if (!skip) {
+					shortDistance = space.findShortestDistance(asteroid.getPosition(), ship.getPosition());
+					movementGoal = asteroid;
+				}
+			}
+		}
 		return movementGoal;
 	}
 }

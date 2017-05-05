@@ -18,6 +18,7 @@ import spacesettlers.graphics.SpacewarGraphics;
 import spacesettlers.graphics.StarGraphics;
 import spacesettlers.objects.AbstractActionableObject;
 import spacesettlers.objects.AbstractObject;
+import spacesettlers.objects.Asteroid;
 import spacesettlers.objects.Ship;
 import spacesettlers.objects.Base;
 import spacesettlers.objects.powerups.SpaceSettlersPowerupEnum;
@@ -51,6 +52,11 @@ public class CaptureBot extends TeamClient {
 	
 	UUID currentShipID = null;
 	int currentShipIndex = -1;
+	
+	//Planning tools
+	PurchaseCosts lastPurchaseCost = null;
+	ArrayList<Asteroid> bestAsteroids = new ArrayList<Asteroid>();
+	
 	/**
 	 * 
 	 */
@@ -77,6 +83,13 @@ public class CaptureBot extends TeamClient {
 			} else {
 				// it is a base.  Heuristically decide when to use the shield (TODO)
 				actions.put(actionable.getId(), new DoNothingAction());
+				//Have the home base plan what 
+				Base base = (Base) actionable;
+				if(base.isHomeBase()){
+					if(lastPurchaseCost != null){
+						bestAsteroids = planPurchases(space, base);
+					}
+				}
 			}
 		} 
 		return actions;
@@ -101,7 +114,7 @@ public class CaptureBot extends TeamClient {
 		
 		//Pick somewhere to go to, as long as we have enough energy
 		if(ship.isCarryingFlag() || !(ship.getEnergy() < 1500)){
-			movementGoal = Actions.getActions(space, this.ships, ship.getId(), this.targets);
+			movementGoal = Actions.getActions(space, this.ships, ship.getId(), this.bestAsteroids, this.targets);
 		}
 		//Let the other ships know where we're going
 		this.targets.set(currentShipIndex, movementGoal);
@@ -179,6 +192,134 @@ public class CaptureBot extends TeamClient {
 		}
 		
 		return movementAction;
+	}
+	
+	//Figure out what we should buy next
+	private PurchaseTypes decideNextPurchase(Toroidal2DPhysics space, AbstractActionableObject object){
+		//Count the number of friendly ships/bases
+		int shipCount = 0;
+		int baseCount = 0;
+		
+		for(Ship ship : space.getShips()){
+			if(ship.getTeamName().equalsIgnoreCase(object.getTeamName())){
+				shipCount += 1;
+			}
+		}
+		for(Base base : space.getBases()){
+			if(base.getTeamName().equalsIgnoreCase(object.getTeamName())){
+				baseCount += 1;
+			}
+		}
+		
+		PurchaseTypes nextPurchase = PurchaseTypes.SHIP;
+		
+		int shipCost = lastPurchaseCost.getCost(PurchaseTypes.SHIP).getTotal();
+		int baseCost = lastPurchaseCost.getCost(PurchaseTypes.BASE).getTotal();
+		int healingCost = lastPurchaseCost.getCost(PurchaseTypes.POWERUP_DOUBLE_BASE_HEALING_SPEED).getTotal();
+		
+		//Decide what to buy next
+		if (shipCount < 6) {
+			if (baseCost < shipCost) {
+				nextPurchase = PurchaseTypes.BASE;
+			}
+			else{
+				nextPurchase = PurchaseTypes.SHIP;
+			}
+		}
+		else{
+			if(baseCount > 3 || healingCost < baseCost * .25){
+				nextPurchase = PurchaseTypes.POWERUP_DOUBLE_BASE_HEALING_SPEED; 
+			}
+			else{
+				nextPurchase = PurchaseTypes.BASE;
+			}
+		}
+		
+		return nextPurchase;
+	}
+	
+	//Plan what to buy next and what asteroids to mine to buy it
+	private ArrayList<Asteroid> planPurchases(Toroidal2DPhysics space, Base base){
+		//See how much the next thing we need to buy costs
+		ResourcePile nextPurchaseCost = lastPurchaseCost.getCost(decideNextPurchase(space, base));
+		//Reduce the price by what we already have
+		nextPurchaseCost.subtract(base.getTeam().getAvailableResources());
+		for(Ship ship : space.getShips()){
+			if(ship.getTeamName().equalsIgnoreCase(base.getTeamName())){
+				nextPurchaseCost.subtract(ship.getResources());
+			}
+		}
+		
+		//Find the mineable asteroids
+		ArrayList<Asteroid> mineableAsteroids = new ArrayList<Asteroid>();
+		for(Asteroid asteroid : space.getAsteroids()){
+			if(asteroid.isMineable()){
+				mineableAsteroids.add(asteroid);
+			}
+		}
+		
+		//Figure out what asteroids we need to collect
+		//Iterative deepening DFS with max depth of 3 asteroids
+		ArrayList<Asteroid> asteroidsToCollect = new ArrayList<Asteroid>();
+		ResourcePile costLeft = new ResourcePile(nextPurchaseCost);
+		for(int i = 1; i < 4; i++){
+			asteroidsToCollect = findBestAsteroids(mineableAsteroids, nextPurchaseCost, i);
+			for(Asteroid asteroid : asteroidsToCollect){
+				costLeft.subtract(asteroid.getResources());
+			}
+			if(costLeft.getTotal() == 0){
+				break;
+			}
+		}
+		
+		//Highlight what asteroids we're going after
+		if (this.Drawing) {
+			for (Asteroid asteroid : asteroidsToCollect) {
+				LineGraphics targetLine = new LineGraphics(base.getPosition(), asteroid.getPosition(),
+						space.findShortestDistanceVector(base.getPosition(), asteroid.getPosition()));
+				targetLine.setLineColor(Color.BLUE);
+				graphicsToAdd.add(targetLine);
+			}
+		}
+		
+		return asteroidsToCollect;
+	}
+	
+	//Recursively find the best asteroids to collect to cover the cost
+	private ArrayList<Asteroid> findBestAsteroids(ArrayList<Asteroid> mineableAsteroids, ResourcePile cost, int maxAsteroidsLeft){
+		ArrayList<Asteroid> bestAsteroids = new ArrayList<Asteroid>();
+		int bestCost = cost.getTotal();
+		if (maxAsteroidsLeft > 0 && cost.getTotal() > 0) {
+			for (int i = 0; i < mineableAsteroids.size(); i++) {
+				Asteroid asteroid = mineableAsteroids.get(i);
+				
+				//See how much this asteroid reduces the cost by
+				ResourcePile costLeft = new ResourcePile(cost);
+				costLeft.subtract(asteroid.getResources());
+				
+				//See what the best asteroids that we haven't used yet are
+				ArrayList<Asteroid> mineableAsteroidsRemaining = new ArrayList<Asteroid>(mineableAsteroids);
+				mineableAsteroidsRemaining.remove(i);
+				ArrayList<Asteroid> bestAsteroidsLeft = findBestAsteroids(mineableAsteroidsRemaining, costLeft, maxAsteroidsLeft - 1);
+				
+				//Figure out the cost with all of those asteroids
+				for(Asteroid otherAsteroid : bestAsteroidsLeft){
+					costLeft.subtract(otherAsteroid.getResources());
+				}
+				
+				//If it's the new best cost, use these asteroids instead
+				if(costLeft.getTotal() < bestCost){
+					bestAsteroidsLeft.add(asteroid);
+					bestAsteroids = bestAsteroidsLeft;
+					bestCost = costLeft.getTotal();
+				}
+				
+				if(bestCost == 0){
+					break;
+				}
+			}
+		}
+		return bestAsteroids;
 	}
 	
 	/**
@@ -288,6 +429,8 @@ public class CaptureBot extends TeamClient {
 				}
 			}
 		}
+		
+		this.lastPurchaseCost = purchaseCosts;
 
 		return purchases;
 	}
