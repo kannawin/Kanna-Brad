@@ -40,8 +40,8 @@ public class Pathing {
 	 * @param ship
 	 * @return
 	 */
-	public static ArrayList<Position> findPath(Toroidal2DPhysics space, Ship ship, AbstractObject target) {
-		ArrayList<Position> nodeList = makeNodes(space, ship, target);
+	public static ArrayList<Position> findPath(Toroidal2DPhysics space, Ship ship, Position targetPosition) {
+		ArrayList<Position> nodeList = makeNodes(space, ship, targetPosition);
 		double[][] distanceMatrix = distanceBetweenNodes(space, nodeList);
 
 		int[] parentNode = path_AStar(space, nodeList, distanceMatrix);
@@ -254,14 +254,14 @@ public class Pathing {
 	 * @param target
 	 * @return
 	 */
-	public static ArrayList<Position> makeNodes(Toroidal2DPhysics space, Ship ship, AbstractObject target) {
+	public static ArrayList<Position> makeNodes(Toroidal2DPhysics space, Ship ship, Position targetPosition) {
 		ArrayList<Position> nodeList = new ArrayList<Position>();
 		// If this is changed, be sure to always add ship first and target
 		// second.
 
 		// Add start and goal
 		nodeList.add(ship.getPosition());
-		nodeList.add(target.getPosition());
+		nodeList.add(targetPosition);
 
 		//Add pre-made nodes
 		nodeList.addAll(getCTFNodes());
