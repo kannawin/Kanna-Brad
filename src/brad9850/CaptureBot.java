@@ -19,6 +19,7 @@ import spacesettlers.graphics.StarGraphics;
 import spacesettlers.objects.AbstractActionableObject;
 import spacesettlers.objects.AbstractObject;
 import spacesettlers.objects.Ship;
+import spacesettlers.objects.Base;
 import spacesettlers.objects.powerups.SpaceSettlersPowerupEnum;
 import spacesettlers.objects.resources.ResourcePile;
 import spacesettlers.objects.weapons.Missile;
@@ -275,7 +276,7 @@ public class CaptureBot extends TeamClient {
 		if(purchaseCosts.canAfford(PurchaseTypes.SHIP, resourcesAvailable)
 				|| purchaseCosts.canAfford(PurchaseTypes.BASE, resourcesAvailable)){
 			//will buy ship if its the cheapest option
-			boolean buyShip = purchaseCosts.getCost(PurchaseTypes.BASE).greaterThan(purchaseCosts.getCost(PurchaseTypes.SHIP));
+			boolean buyShip = purchaseCosts.canAfford(PurchaseTypes.SHIP, resourcesAvailable);
 			if(buyShip){
 				for(AbstractActionableObject actionableObject : actionableObjects){
 					if(actionableObject instanceof Base){
