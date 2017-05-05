@@ -276,7 +276,7 @@ public class CaptureBot extends TeamClient {
 		if(purchaseCosts.canAfford(PurchaseTypes.SHIP, resourcesAvailable)
 				|| purchaseCosts.canAfford(PurchaseTypes.BASE, resourcesAvailable)){
 			//will buy ship if its the cheapest option
-			boolean buyShip = purchaseCosts.canAfford(PurchaseTypes.BASE, resourcesAvailable);
+			boolean buyShip = purchaseCosts.canAfford(PurchaseTypes.SHIP, resourcesAvailable);
 			if(buyShip){
 				for(AbstractActionableObject actionableObject : actionableObjects){
 					if(actionableObject instanceof Base){
