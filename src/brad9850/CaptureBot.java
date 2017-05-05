@@ -97,8 +97,6 @@ public class CaptureBot extends TeamClient {
 		boolean solidGoal = false;		
 		
 		//Pick somewhere to go to
-		System.out.println("New ship");
-		System.out.println(currentShipIndex);
 		movementGoal = Actions.getActions(space, this.ships, ship.getId(), this.targets);
 		//Let the other ships know where we're going
 		this.targets.set(currentShipIndex, movementGoal);

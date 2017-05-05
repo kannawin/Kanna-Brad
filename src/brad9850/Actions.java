@@ -24,7 +24,6 @@ public class Actions {
 		AbstractObject actionList = space.getObjectById(ship);
 		
 		Ship currentShip = (Ship) space.getObjectById(ship);
-		System.out.println(ships.indexOf(ship));
 		switch(ships.indexOf(ship)){
 			case 0: //flag bearer 
 				actionList = flagBearer(space,currentShip);
