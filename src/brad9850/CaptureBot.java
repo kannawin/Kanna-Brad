@@ -66,7 +66,7 @@ public class CaptureBot extends TeamClient {
 				if(ships.indexOf(currentShipID) == -1){
 					this.ships.add(currentShipID);
 					this.paths.put(currentShipID, new ArrayList<Position>());
-					this.targets.add(null);
+					this.targets.add(ship);
 					this.lastPathfindTimestep.add(0);
 					this.previousMovementTargetIDs.add(null);
 					this.shouldShoot.add(false);
