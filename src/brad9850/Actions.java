@@ -91,6 +91,9 @@ public class Actions {
 					}
 				}
 				Position fakeAsteroidPosition = new Position(enemyMainX + (enemyMainX - allyMainX) * 3, mainY);
+				while(!space.isLocationFree(fakeAsteroidPosition, ship.getRadius() + 20)){
+					fakeAsteroidPosition.setY(fakeAsteroidPosition.getY() + 10);
+				}
 				movementGoal = new Asteroid(fakeAsteroidPosition, false, ship.getRadius(), false, 0, 0, 0);
 			}
 			
