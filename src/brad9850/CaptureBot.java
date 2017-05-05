@@ -411,19 +411,20 @@ public class CaptureBot extends TeamClient {
 			else if (nextPurchase == PurchaseTypes.BASE) {
 				boolean canplace = true;
 				for (AbstractActionableObject actionableObject : actionableObjects) {
+					//Only let the flag carrier purchase a base
 					if (actionableObject instanceof Ship && ((Ship)actionableObject).isCarryingFlag()) {
+						Ship ship = (Ship) actionableObject;
 						// The base should be placed far away from existing bases
 						for (AbstractActionableObject actionableObject2 : actionableObjects) {
 							if (actionableObject2 instanceof Base) {
-								if (space.findShortestDistance(actionableObject2.getPosition(),
-										space.getObjectById(this.ships.get(0)).getPosition()) < 250) {
+								Base base = (Base) actionableObject2;
+								if (space.findShortestDistance(base.getPosition(), ship.getPosition()) < 250){
 									canplace = false;
 									break;
 								}
 							}
 						}
 						if (canplace) {
-							Ship ship = (Ship) actionableObject;
 							purchases.put(ship.getId(), PurchaseTypes.BASE);
 							break;
 						}
