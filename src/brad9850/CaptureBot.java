@@ -87,6 +87,7 @@ public class CaptureBot extends TeamClient {
 				actions.put(actionable.getId(), new DoNothingAction());
 				//Have the home base plan what 
 				Base base = (Base) actionable;
+				Planning.plan(space, new PlanState(space, base.getTeamName()));
 				if(base.isHomeBase()){
 					if(lastPurchaseCost != null){
 						bestAsteroids = planPurchases(space, base);
