@@ -3,16 +3,12 @@ package brad9850;
 import java.util.ArrayList;
 import java.util.UUID;
 
-import spacesettlers.actions.PurchaseCosts;
 import spacesettlers.actions.PurchaseTypes;
-import spacesettlers.clients.ImmutableTeamInfo;
 import spacesettlers.clients.Team;
-import spacesettlers.gui.TeamInfoPanel;
 import spacesettlers.objects.Asteroid;
 import spacesettlers.objects.Base;
 import spacesettlers.objects.Ship;
 import spacesettlers.objects.resources.ResourcePile;
-import spacesettlers.objects.resources.ResourceTypes;
 import spacesettlers.simulator.Toroidal2DPhysics;
 
 /**
@@ -20,7 +16,7 @@ import spacesettlers.simulator.Toroidal2DPhysics;
  * @author chris
  *
  */
-public class PlanState {
+public class PlanState{
 	//Whether or not a ship has been bought
 	boolean[] shipBought;
 	//The ship ID
