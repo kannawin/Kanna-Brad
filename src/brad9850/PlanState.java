@@ -37,6 +37,8 @@ public class PlanState {
 
 	//The number of non-home bases built
 	int baseCount;
+	//The number of flags the team has
+	int flagCount;
 	//The total amount of resources collected
 	ResourcePile totalResources;
 	//The total amount of time taken so far
@@ -65,6 +67,7 @@ public class PlanState {
 		for(ImmutableTeamInfo info :space.getTeamInfo()){
 			if(info.getTeamName().equalsIgnoreCase(teamName)){
 				totalResources = info.getAvailableResources();
+				flagCount = (int) info.getScore();
 				System.out.println(totalResources.getResourceQuantity(ResourceTypes.FUEL));
 			}
 		}
@@ -93,6 +96,7 @@ public class PlanState {
 		asteroidClaimedBy = otherState.asteroidClaimedBy.clone();
 
 		baseCount = otherState.baseCount;
+		flagCount = otherState.flagCount;
 		totalResources = new ResourcePile(otherState.totalResources);
 		totalDuration = otherState.totalDuration;
 		estimatedTimeToBase = otherState.estimatedTimeToBase;
