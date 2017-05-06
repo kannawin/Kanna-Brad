@@ -3,9 +3,13 @@ package brad9850;
 import java.util.ArrayList;
 import java.util.UUID;
 
+import spacesettlers.actions.PurchaseCosts;
+import spacesettlers.actions.PurchaseTypes;
 import spacesettlers.clients.ImmutableTeamInfo;
+import spacesettlers.clients.Team;
 import spacesettlers.gui.TeamInfoPanel;
 import spacesettlers.objects.Asteroid;
+import spacesettlers.objects.Base;
 import spacesettlers.objects.Ship;
 import spacesettlers.objects.resources.ResourcePile;
 import spacesettlers.objects.resources.ResourceTypes;
@@ -39,6 +43,9 @@ public class PlanState {
 	int baseCount;
 	//The number of flags the team has
 	int flagCount;
+	//How much buying various objects costs
+	ResourcePile shipCost;
+	ResourcePile baseCost;
 	//The total amount of resources collected
 	ResourcePile totalResources;
 	//The total amount of time taken so far
@@ -64,13 +71,19 @@ public class PlanState {
 		baseCount = 0;
 		totalDuration = 0;
 		
-		for(ImmutableTeamInfo info :space.getTeamInfo()){
-			if(info.getTeamName().equalsIgnoreCase(teamName)){
-				totalResources = info.getAvailableResources();
-				flagCount = (int) info.getScore();
-				System.out.println(totalResources.getResourceQuantity(ResourceTypes.FUEL));
+		//Find the team object
+		Team team = null;
+		//For some mysterious reason, this is the only way to do so
+		for(Base base : space.getBases()){
+			if(base.getTeamName().equalsIgnoreCase(teamName)){
+				team = base.getTeam();
 			}
 		}
+		
+		totalResources = team.getAvailableResources();
+		flagCount = (int) team.getScore();
+		shipCost = team.getCurrentCost(PurchaseTypes.SHIP);
+		baseCost = team.getCurrentCost(PurchaseTypes.BASE);
 		
 		estimatedTimeToBase = 500;
 		estimatedTimeToFlag = 500;
@@ -99,6 +112,8 @@ public class PlanState {
 		flagCount = otherState.flagCount;
 		totalResources = new ResourcePile(otherState.totalResources);
 		totalDuration = otherState.totalDuration;
+		shipCost = new ResourcePile(otherState.shipCost);
+		baseCost = new ResourcePile(otherState.baseCost);
 		estimatedTimeToBase = otherState.estimatedTimeToBase;
 		estimatedTimeToFlag = otherState.estimatedTimeToFlag;
 		estimatedTimeToAsteroid = otherState.estimatedTimeToAsteroid;
