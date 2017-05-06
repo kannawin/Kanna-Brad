@@ -23,6 +23,28 @@ import spacesettlers.utilities.Position;
  *
  */
 public class Actions {
+	public static AbstractObject getPlannedAction(Toroidal2DPhysics space, ArrayList<UUID> ships, UUID ship, int plannedAction){
+		AbstractObject actionTarget = space.getObjectById(ship);
+		Ship currentShip = (Ship) space.getObjectById(ship);
+		
+		switch(plannedAction){
+			case Planning.GetFlag:
+				actionTarget = flagBearer(space, currentShip);
+				break;
+			case Planning.GoToBase:
+				actionTarget = findClosestTeamBase(space, currentShip);
+				break;
+			case Planning.Standby:
+				actionTarget = makeStandbyLocation(space, currentShip);
+				break;
+			case Planning.Nothing:
+				actionTarget = Combat.nearestEnemy(space, currentShip);
+				break;
+		}
+		
+		return actionTarget;
+	}
+	
 	public static AbstractObject getActions(Toroidal2DPhysics space, ArrayList<UUID> ships, UUID ship, ArrayList<Asteroid> bestAsteroids, ArrayList<AbstractObject> otherTargets){
 		AbstractObject actionTarget = space.getObjectById(ship);
 		Ship currentShip = (Ship) space.getObjectById(ship);
@@ -84,23 +106,7 @@ public class Actions {
 		//If we aren't going anywhere yet, it means someone else is carrying the flag
 		//In that case, hang out nearby the flag alcoves
 		if(movementGoal == null){
-			double enemyMainX = 0;
-			double allyMainX = 0;
-			double mainY = 0;
-			for(Base base : space.getBases()){
-				if(base.isHomeBase()){
-					mainY = base.getPosition().getY();
-					if(base.getTeamName().equalsIgnoreCase(ship.getTeamName())){
-						allyMainX = base.getPosition().getX();
-					}
-					else{
-						enemyMainX = base.getPosition().getX();
-					}
-				}
-				Position fakeAsteroidPosition = new Position(enemyMainX + (enemyMainX - allyMainX) * 3, mainY);
-				movementGoal = new Asteroid(fakeAsteroidPosition, false, ship.getRadius(), false, 0, 0, 0);
-			}
-			
+			movementGoal = makeStandbyLocation(space, ship);			
 		}
 		return movementGoal;
 	}
@@ -204,6 +210,43 @@ public class Actions {
 					movementGoal = asteroid;
 				}
 			}
+		}
+		return movementGoal;
+	}
+	
+	private static Base findClosestTeamBase(Toroidal2DPhysics space, Ship ship){
+		double baseDistance = 1000000000;
+		Base closestBase = null;
+		//If we're carrying the flag, return to base
+		for(Base base : space.getBases()){
+			if(base.getTeamName().equalsIgnoreCase(ship.getTeamName())
+					&& space.findShortestDistance(base.getPosition(), ship.getPosition()) < baseDistance){
+				baseDistance = space.findShortestDistance(base.getPosition(), ship.getPosition());
+				closestBase = base;
+			}
+		}
+		return closestBase;
+	}
+	
+	private static AbstractObject makeStandbyLocation(Toroidal2DPhysics space, Ship ship){
+		AbstractObject movementGoal = null;
+		// If we aren't going anywhere yet, it means someone else is carrying
+		// the flag
+		// In that case, hang out nearby the flag alcoves
+		double enemyMainX = 0;
+		double allyMainX = 0;
+		double mainY = 0;
+		for (Base base : space.getBases()) {
+			if (base.isHomeBase()) {
+				mainY = base.getPosition().getY();
+				if (base.getTeamName().equalsIgnoreCase(ship.getTeamName())) {
+					allyMainX = base.getPosition().getX();
+				} else {
+					enemyMainX = base.getPosition().getX();
+				}
+			}
+			Position fakeAsteroidPosition = new Position(enemyMainX + (enemyMainX - allyMainX) * 3, mainY);
+			movementGoal = new Asteroid(fakeAsteroidPosition, false, ship.getRadius(), false, 0, 0, 0);
 		}
 		return movementGoal;
 	}

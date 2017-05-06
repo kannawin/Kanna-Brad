@@ -42,6 +42,7 @@ public class CaptureBot extends TeamClient {
 	public final int EnergyThreshold = 1500;
 	public final int PathingFrequency = 25;
 	public final int MaxShips = 4;
+	public final int MaxAsteroids = 10;
 	public final boolean Drawing = true;
 	
 	//Arrays for handling multiple ships
@@ -56,8 +57,9 @@ public class CaptureBot extends TeamClient {
 	int currentShipIndex = -1;
 	
 	//Planning tools
-	PurchaseCosts lastPurchaseCost = null;
-	ArrayList<Asteroid> bestAsteroids = new ArrayList<Asteroid>();
+	int[] plannedActions = new int[MaxShips + 1];
+//	PurchaseCosts lastPurchaseCost = null;
+//	ArrayList<Asteroid> bestAsteroids = new ArrayList<Asteroid>();
 	
 	/**
 	 * 
@@ -88,11 +90,8 @@ public class CaptureBot extends TeamClient {
 				actions.put(actionable.getId(), new DoNothingAction());
 				//Have the home base plan what 
 				Base base = (Base) actionable;
-				int[] test = Planning.plan(space, new PlanState(space, base.getTeamName()), 5);
-				if(base.isHomeBase()){
-					if(lastPurchaseCost != null){
-						bestAsteroids = planPurchases(space, base);
-					}
+				if(base.isHomeBase() && space.getCurrentTimestep() % 20 == 0){
+					plannedActions = Planning.plan(space, new PlanState(space, base.getTeamName()), 2);
 				}
 			}
 		} 
@@ -115,10 +114,29 @@ public class CaptureBot extends TeamClient {
 		AbstractObject movementGoal = Combat.nearestBeacon(space, ship);
 		boolean solidGoal = false;		
 		
+		int plannedAction = plannedActions[ships.indexOf(ship.getId())];
+		if(plannedAction >= 0
+				&& plannedAction < MaxAsteroids){
+			//Hack to pick the nth mineable asteroid
+			for(Asteroid asteroid : space.getAsteroids()){
+				if(asteroid.isMineable()){
+					if(plannedAction-- == 0){
+						movementGoal = asteroid;
+					}
+				}
+			}
+		}
+		else{
+			movementGoal = Actions.getPlannedAction(space, ships, ship.getId(), plannedAction);
+		}
 		
-		//Pick somewhere to go to, as long as we have enough energy
-		if(ship.isCarryingFlag() || !(ship.getEnergy() < 1500)){
-			movementGoal = Actions.getActions(space, this.ships, ship.getId(), this.bestAsteroids, this.targets);
+		
+//		//Pick somewhere to go to, as long as we have enough energy
+//		if(ship.isCarryingFlag() || !(ship.getEnergy() < 1500)){
+//			movementGoal = Actions.getActions(space, this.ships, ship.getId(), this.bestAsteroids, this.targets);
+//		}
+		if(!ship.isCarryingFlag() && ship.getEnergy() < 1500){
+			movementGoal = Combat.nearestBeacon(space, ship);
 		}
 		//Let the other ships know where we're going
 		this.targets.set(currentShipIndex, movementGoal);
@@ -198,96 +216,96 @@ public class CaptureBot extends TeamClient {
 		return movementAction;
 	}
 	
-	//Figure out what we should buy next
-	private PurchaseTypes decideNextPurchase(Toroidal2DPhysics space, String teamName){
-		//Count the number of friendly ships/bases
-		int shipCount = 0;
-		int baseCount = 0;
-		
-		for(Ship ship : space.getShips()){
-			if(ship.getTeamName().equalsIgnoreCase(teamName)){
-				shipCount += 1;
-			}
-		}
-		for(Base base : space.getBases()){
-			if(base.getTeamName().equalsIgnoreCase(teamName)){
-				baseCount += 1;
-			}
-		}
-		
-		PurchaseTypes nextPurchase = PurchaseTypes.SHIP;
-		
-		int shipCost = lastPurchaseCost.getCost(PurchaseTypes.SHIP).getTotal();
-		int baseCost = lastPurchaseCost.getCost(PurchaseTypes.BASE).getTotal();
-		int healingCost = lastPurchaseCost.getCost(PurchaseTypes.POWERUP_DOUBLE_BASE_HEALING_SPEED).getTotal();
-		
-		//Decide what to buy next
-		if (shipCount < this.MaxShips) {
-			if (baseCost < shipCost) {
-				nextPurchase = PurchaseTypes.BASE;
-			}
-			else{
-				nextPurchase = PurchaseTypes.SHIP;
-			}
-		}
-		else{
-			if(baseCount > 3 || healingCost < baseCost * .25){
-				nextPurchase = PurchaseTypes.POWERUP_DOUBLE_BASE_HEALING_SPEED; 
-			}
-			else{
-				nextPurchase = PurchaseTypes.BASE;
-			}
-		}
-		
-		return nextPurchase;
-	}
-	
-	//Plan what to buy next and what asteroids to mine to buy it
-	private ArrayList<Asteroid> planPurchases(Toroidal2DPhysics space, Base base){
-		//See how much the next thing we need to buy costs
-		ResourcePile nextPurchaseCost = lastPurchaseCost.getCost(decideNextPurchase(space, base.getTeamName()));
-		//Reduce the price by what we already have
-		nextPurchaseCost.subtract(base.getTeam().getAvailableResources());
-		for(Ship ship : space.getShips()){
-			if(ship.getTeamName().equalsIgnoreCase(base.getTeamName())){
-				nextPurchaseCost.subtract(ship.getResources());
-			}
-		}
-		
-		//Find the mineable asteroids
-		ArrayList<Asteroid> mineableAsteroids = new ArrayList<Asteroid>();
-		for(Asteroid asteroid : space.getAsteroids()){
-			if(asteroid.isMineable()){
-				mineableAsteroids.add(asteroid);
-			}
-		}
-		
-		//Figure out what asteroids we need to collect
-		//Iterative deepening DFS with max depth of 3 asteroids
-		ArrayList<Asteroid> asteroidsToCollect = new ArrayList<Asteroid>();
-		ResourcePile costLeft = new ResourcePile(nextPurchaseCost);
-		for(int i = 1; i < 4; i++){
-			asteroidsToCollect = findBestAsteroids(mineableAsteroids, nextPurchaseCost, i);
-			for(Asteroid asteroid : asteroidsToCollect){
-				costLeft.subtract(asteroid.getResources());
-			}
-			if(costLeft.getTotal() == 0){
-				break;
-			}
-		}
-		
-		//Highlight what asteroids we're going after
-		if (this.Drawing) {
-			for (Asteroid asteroid : asteroidsToCollect) {
-				LineGraphics targetLine = new LineGraphics(base.getPosition(), asteroid.getPosition(),
-						space.findShortestDistanceVector(base.getPosition(), asteroid.getPosition()));
-				targetLine.setLineColor(Color.BLUE);
-				graphicsToAdd.add(targetLine);
-			}
-		}
-		
-		return asteroidsToCollect;
-	}
+//	//Figure out what we should buy next
+//	private PurchaseTypes decideNextPurchase(Toroidal2DPhysics space, String teamName){
+//		//Count the number of friendly ships/bases
+//		int shipCount = 0;
+//		int baseCount = 0;
+//		
+//		for(Ship ship : space.getShips()){
+//			if(ship.getTeamName().equalsIgnoreCase(teamName)){
+//				shipCount += 1;
+//			}
+//		}
+//		for(Base base : space.getBases()){
+//			if(base.getTeamName().equalsIgnoreCase(teamName)){
+//				baseCount += 1;
+//			}
+//		}
+//		
+//		PurchaseTypes nextPurchase = PurchaseTypes.SHIP;
+//		
+//		int shipCost = lastPurchaseCost.getCost(PurchaseTypes.SHIP).getTotal();
+//		int baseCost = lastPurchaseCost.getCost(PurchaseTypes.BASE).getTotal();
+//		int healingCost = lastPurchaseCost.getCost(PurchaseTypes.POWERUP_DOUBLE_BASE_HEALING_SPEED).getTotal();
+//		
+//		//Decide what to buy next
+//		if (shipCount < this.MaxShips) {
+//			if (baseCost < shipCost) {
+//				nextPurchase = PurchaseTypes.BASE;
+//			}
+//			else{
+//				nextPurchase = PurchaseTypes.SHIP;
+//			}
+//		}
+//		else{
+//			if(baseCount > 3 || healingCost < baseCost * .25){
+//				nextPurchase = PurchaseTypes.POWERUP_DOUBLE_BASE_HEALING_SPEED; 
+//			}
+//			else{
+//				nextPurchase = PurchaseTypes.BASE;
+//			}
+//		}
+//		
+//		return nextPurchase;
+//	}
+//	
+//	//Plan what to buy next and what asteroids to mine to buy it
+//	private ArrayList<Asteroid> planPurchases(Toroidal2DPhysics space, Base base){
+//		//See how much the next thing we need to buy costs
+//		ResourcePile nextPurchaseCost = lastPurchaseCost.getCost(decideNextPurchase(space, base.getTeamName()));
+//		//Reduce the price by what we already have
+//		nextPurchaseCost.subtract(base.getTeam().getAvailableResources());
+//		for(Ship ship : space.getShips()){
+//			if(ship.getTeamName().equalsIgnoreCase(base.getTeamName())){
+//				nextPurchaseCost.subtract(ship.getResources());
+//			}
+//		}
+//		
+//		//Find the mineable asteroids
+//		ArrayList<Asteroid> mineableAsteroids = new ArrayList<Asteroid>();
+//		for(Asteroid asteroid : space.getAsteroids()){
+//			if(asteroid.isMineable()){
+//				mineableAsteroids.add(asteroid);
+//			}
+//		}
+//		
+//		//Figure out what asteroids we need to collect
+//		//Iterative deepening DFS with max depth of 3 asteroids
+//		ArrayList<Asteroid> asteroidsToCollect = new ArrayList<Asteroid>();
+//		ResourcePile costLeft = new ResourcePile(nextPurchaseCost);
+//		for(int i = 1; i < 4; i++){
+//			asteroidsToCollect = findBestAsteroids(mineableAsteroids, nextPurchaseCost, i);
+//			for(Asteroid asteroid : asteroidsToCollect){
+//				costLeft.subtract(asteroid.getResources());
+//			}
+//			if(costLeft.getTotal() == 0){
+//				break;
+//			}
+//		}
+//		
+//		//Highlight what asteroids we're going after
+//		if (this.Drawing) {
+//			for (Asteroid asteroid : asteroidsToCollect) {
+//				LineGraphics targetLine = new LineGraphics(base.getPosition(), asteroid.getPosition(),
+//						space.findShortestDistanceVector(base.getPosition(), asteroid.getPosition()));
+//				targetLine.setLineColor(Color.BLUE);
+//				graphicsToAdd.add(targetLine);
+//			}
+//		}
+//		
+//		return asteroidsToCollect;
+//	}
 	
 	//Recursively find the best asteroids to collect to cover the cost
 	private ArrayList<Asteroid> findBestAsteroids(ArrayList<Asteroid> mineableAsteroids, ResourcePile cost, int maxAsteroidsLeft){
@@ -398,8 +416,16 @@ public class CaptureBot extends TeamClient {
 
 		HashMap<UUID, PurchaseTypes> purchases = new HashMap<UUID, PurchaseTypes>();
 
-		this.lastPurchaseCost = purchaseCosts;
-		PurchaseTypes nextPurchase = decideNextPurchase(space, actionableObjects.iterator().next().getTeamName());
+//		this.lastPurchaseCost = purchaseCosts;
+//		PurchaseTypes nextPurchase = decideNextPurchase(space, actionableObjects.iterator().next().getTeamName());
+		PurchaseTypes nextPurchase = PurchaseTypes.NOTHING;
+		if(plannedActions[MaxShips] == Planning.BuyBase){
+			nextPurchase = PurchaseTypes.BASE;
+		}
+		else if(plannedActions[MaxShips] == Planning.BuyShip){
+			nextPurchase = PurchaseTypes.SHIP;
+		}
+		
 		if(purchaseCosts.canAfford(nextPurchase, resourcesAvailable)){
 			//Purchasing a ship
 			if(nextPurchase == PurchaseTypes.SHIP){
