@@ -75,6 +75,32 @@ public class PlanState {
 	}
 	
 	/**
+	 * Make a deep copy of another state
+	 * @param otherState
+	 */
+	public PlanState(PlanState otherState){
+		shipBought = otherState.shipBought.clone();
+		shipID = new ArrayList<UUID>(otherState.shipID);
+		shipOccupiedUntil = otherState.shipOccupiedUntil.clone();
+		shipCarrying = new ResourcePile[otherState.shipCarrying.length];
+		for(int i = 0; i < shipCarrying.length; i++){
+			shipCarrying[i] = new ResourcePile(otherState.shipCarrying[i]);
+		}
+		shipOnStandby = otherState.shipOnStandby;
+		shipCarryingFlag = otherState.shipCarryingFlag;
+		
+		asteroidID = new ArrayList<UUID>(otherState.asteroidID);
+		asteroidClaimedBy = otherState.asteroidClaimedBy.clone();
+
+		baseCount = otherState.baseCount;
+		totalResources = new ResourcePile(otherState.totalResources);
+		totalDuration = otherState.totalDuration;
+		estimatedTimeToBase = otherState.estimatedTimeToBase;
+		estimatedTimeToFlag = otherState.estimatedTimeToFlag;
+		estimatedTimeToAsteroid = otherState.estimatedTimeToAsteroid;
+	}
+	
+	/**
 	 * Initialize the info related to ships
 	 * @param space
 	 * @param teamName
