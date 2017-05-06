@@ -5,54 +5,73 @@ import java.util.PriorityQueue;
 import spacesettlers.objects.Asteroid;
 import spacesettlers.simulator.Toroidal2DPhysics;
 
-public class Planning {
+public class Planning {	
+	public static final int Nothing = -1;
+	public static final int GetFlag = 20;
+	public static final int Standby = 21;	
+	public static final int GoToBase = 22;
+	public static final int BuyShip = 30;
+	public static final int BuyBase = 31;
+
+	private static final int NumShips = 4;
+	private static final int NumAsteroids = 10;
 	
-	public static void plan(Toroidal2DPhysics space, PlanState state){
-		int numShips = 6;
-		int numAsteroids = 10;
+	private static final int MaxSearchLength = 750;
+	
+	public static int[] plan(Toroidal2DPhysics space, PlanState state, int flagsAhead){
+		int[] firstActions = new int[NumShips + 1];
 		
 		PriorityQueue<PlanState> frontier = new PriorityQueue<PlanState>(new PlanStateComparator());
 		frontier.add(state);
 		
 		int startingFlags = state.flagCount;
-		
-		while(!frontier.isEmpty()){
-			PlanState currentState = frontier.poll();
-			if(currentState.flagCount > startingFlags + 1){
-				break;
-			}
-			
-			//Attempt to take all possible actions, and add valid ones to the queue
-			for(int ship = 0; ship < numShips; ship++){
-				//Mining asteroids
-				for(int asteroid = 0; asteroid < numAsteroids; asteroid++){
+
+		PlanState currentState = frontier.poll();
+		int searchLength = 0;
+
+		while (currentState != null 
+				&& currentState.flagCount < startingFlags + flagsAhead
+				&& searchLength++ < MaxSearchLength) {
+			// Attempt to take all possible actions, and add valid ones to the
+			// queue
+			for (int ship = 0; ship < NumShips; ship++) {
+				// Mining asteroids
+				for (int asteroid = 0; asteroid < NumAsteroids; asteroid++) {
 					PlanState stateAfterAction = mineAsteroid(space, currentState, ship, asteroid);
-					if(stateAfterAction != null){
+					if (stateAfterAction != null) {
 						frontier.add(stateAfterAction);
 					}
 				}
-				//Going to locations
+				// Going to locations
 				PlanState[] movingActions = new PlanState[3];
 				movingActions[0] = pickupFlag(currentState, ship);
 				movingActions[1] = returnToBase(currentState, ship);
 				movingActions[2] = standby(currentState, ship);
-				
-				for(int i = 0; i < movingActions.length; i++){
-					if(movingActions[i] != null){
+
+				for (int i = 0; i < movingActions.length; i++) {
+					if (movingActions[i] != null) {
 						frontier.add(movingActions[i]);
 					}
 				}
 			}
-			//Trying to buy something
+			// Trying to buy something
 			PlanState[] buyingActions = new PlanState[2];
 			buyingActions[1] = buyShip(currentState);
 			buyingActions[0] = buyBase(currentState);
-			for(int i = 0; i < buyingActions.length; i++){
-				if(buyingActions[i] != null){
+			for (int i = 0; i < buyingActions.length; i++) {
+				if (buyingActions[i] != null) {
 					frontier.add(buyingActions[i]);
 				}
 			}
+
+			currentState = frontier.poll();
 		}
+		
+		for(int i = 0; i < currentState.shipFirstActions.length; i++){
+			firstActions[i] = currentState.shipFirstActions[i];
+		}
+		firstActions[NumShips] = currentState.firstPurchase;
+		return firstActions;
 	}
 	
 	/**
@@ -73,6 +92,10 @@ public class Planning {
 			state.shipCarrying[ship].add(asteroidObject.getResources());
 			updateDuration(state, ship, state.estimatedTimeToAsteroid);
 			
+			if(state.shipFirstActions[ship] == Planning.Nothing){
+				state.shipFirstActions[ship] = asteroid;
+			}
+			
 			return state;
 		}
 		else{
@@ -87,7 +110,7 @@ public class Planning {
 	 */
 	private  static PlanState buyShip(PlanState oldState){
 		PlanState state = new PlanState(oldState);
-		if(!state.shipBought[state.shipBought.length - 1] //Don't buy a ship if we already have 6
+		if(!state.shipBought[state.shipBought.length - 1] //Don't buy a ship if we already have our max
 				&& state.totalResources.greaterThan(state.shipCost)){
 			
 			//Figure out the next ship we need to buy and buy it
@@ -96,9 +119,14 @@ public class Planning {
 					state.shipBought[i] = true;
 				}
 			}
+			state.shipCount++;
 			//Subtract the cost of the ship, and increase it for next time
 			state.totalResources.subtract(state.shipCost);
 			state.shipCost.doubleCosts();
+			
+			if(state.firstPurchase == Planning.Nothing){
+				state.firstPurchase = Planning.BuyShip;
+			}
 			
 			return state;
 		}else{
@@ -122,6 +150,10 @@ public class Planning {
 			//Subtract the cost of the base, and increase it for next time
 			state.totalResources.subtract(state.baseCost);
 			state.baseCost.doubleCosts();
+			
+			if(state.firstPurchase == Planning.Nothing){
+				state.firstPurchase = Planning.BuyBase;
+			}
 			
 			return state;
 		}else{
@@ -149,6 +181,10 @@ public class Planning {
 			}
 			updateDuration(state, ship, timeTaken);
 			
+			if(state.shipFirstActions[ship] == Planning.Nothing){
+				state.shipFirstActions[ship] = Planning.GetFlag;
+			}
+			
 			return state;
 		}
 		else{
@@ -168,6 +204,11 @@ public class Planning {
 				&& state.shipCarryingFlag != -1
 				&& state.shipOnStandby == -1){
 			state.shipOnStandby = ship;
+			
+			if(state.shipFirstActions[ship] == Planning.Nothing){
+				state.shipFirstActions[ship] = Planning.Standby;
+			}
+			
 			return state;
 		}
 		else{
@@ -197,6 +238,10 @@ public class Planning {
 			//Have the standby ship start acting now
 			if(state.shipOnStandby != -1){
 				state.shipOccupiedUntil[state.shipOnStandby] = state.shipOccupiedUntil[ship];
+			}
+			
+			if(state.shipFirstActions[ship] == Planning.Nothing){
+				state.shipFirstActions[ship] = Planning.GoToBase;
 			}
 			
 			return state;

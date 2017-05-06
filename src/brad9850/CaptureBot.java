@@ -41,6 +41,7 @@ public class CaptureBot extends TeamClient {
 	//Magic numbers
 	public final int EnergyThreshold = 1500;
 	public final int PathingFrequency = 25;
+	public final int MaxShips = 4;
 	public final boolean Drawing = true;
 	
 	//Arrays for handling multiple ships
@@ -87,7 +88,7 @@ public class CaptureBot extends TeamClient {
 				actions.put(actionable.getId(), new DoNothingAction());
 				//Have the home base plan what 
 				Base base = (Base) actionable;
-				Planning.plan(space, new PlanState(space, base.getTeamName()));
+				int[] test = Planning.plan(space, new PlanState(space, base.getTeamName()), 5);
 				if(base.isHomeBase()){
 					if(lastPurchaseCost != null){
 						bestAsteroids = planPurchases(space, base);
@@ -221,7 +222,7 @@ public class CaptureBot extends TeamClient {
 		int healingCost = lastPurchaseCost.getCost(PurchaseTypes.POWERUP_DOUBLE_BASE_HEALING_SPEED).getTotal();
 		
 		//Decide what to buy next
-		if (shipCount < 6) {
+		if (shipCount < this.MaxShips) {
 			if (baseCost < shipCost) {
 				nextPurchase = PurchaseTypes.BASE;
 			}

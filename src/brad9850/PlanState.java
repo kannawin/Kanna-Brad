@@ -19,6 +19,8 @@ import spacesettlers.simulator.Toroidal2DPhysics;
 public class PlanState{
 	//Whether or not a ship has been bought
 	boolean[] shipBought;
+	//The number of bought ships
+	int shipCount;
 	//The ship ID
 	ArrayList<UUID> shipID;
 	//How long a ship is busy with its planned tasks
@@ -29,6 +31,10 @@ public class PlanState{
 	int shipOnStandby;
 	//The ship that is carrying the flag
 	int shipCarryingFlag;
+	//The first actions each ship has taken
+	int shipFirstActions[];
+	//The first purchase taken
+	int firstPurchase;
 	
 	//The asteroid's ID
 	ArrayList<UUID> asteroidID;
@@ -51,7 +57,7 @@ public class PlanState{
 	int estimatedTimeToFlag;
 	int estimatedTimeToAsteroid;
 	
-	final int maxShipCount = 6;
+	final int maxShipCount = 4;
 	final int maxAsteroidCount = 10;
 	
 	/**
@@ -80,6 +86,7 @@ public class PlanState{
 		flagCount = (int) team.getScore();
 		shipCost = team.getCurrentCost(PurchaseTypes.SHIP);
 		baseCost = team.getCurrentCost(PurchaseTypes.BASE);
+		firstPurchase = -1;
 		
 		estimatedTimeToBase = 500;
 		estimatedTimeToFlag = 500;
@@ -92,9 +99,12 @@ public class PlanState{
 	 */
 	public PlanState(PlanState otherState){
 		shipBought = otherState.shipBought.clone();
+		shipCount = otherState.shipCount;
 		shipID = new ArrayList<UUID>(otherState.shipID);
 		shipOccupiedUntil = otherState.shipOccupiedUntil.clone();
 		shipCarrying = new ResourcePile[otherState.shipCarrying.length];
+		shipFirstActions = otherState.shipFirstActions.clone();
+		firstPurchase = otherState.firstPurchase;
 		for(int i = 0; i < shipCarrying.length; i++){
 			if (otherState.shipCarrying[i] != null) {
 				shipCarrying[i] = new ResourcePile(otherState.shipCarrying[i]);
@@ -127,9 +137,11 @@ public class PlanState{
 	 */
 	private void initShips(Toroidal2DPhysics space, String teamName){
 		shipBought = new boolean[maxShipCount];
+		shipCount = 0;
 		shipID = new ArrayList<UUID>();
 		shipOccupiedUntil = new int[maxShipCount];
 		shipCarrying = new ResourcePile[maxShipCount];
+		shipFirstActions = new int[maxShipCount];
 		
 		shipOnStandby = -1;
 		shipCarryingFlag = -1;
@@ -143,7 +155,15 @@ public class PlanState{
 				shipBought[shipIndex] = true;
 				shipID.add(ship.getId());
 				shipCarrying[shipIndex] = ship.getResources();
+				shipCount++;
 				shipIndex++;
+			}
+		}
+		
+		for(int i = 0; i < maxShipCount; i++){
+			shipFirstActions[i] = -1;
+			if(shipCarrying[i] == null){
+				shipCarrying[i] = new ResourcePile();
 			}
 		}
 	}
