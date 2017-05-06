@@ -96,11 +96,16 @@ public class PlanState{
 		shipOccupiedUntil = otherState.shipOccupiedUntil.clone();
 		shipCarrying = new ResourcePile[otherState.shipCarrying.length];
 		for(int i = 0; i < shipCarrying.length; i++){
-			shipCarrying[i] = new ResourcePile(otherState.shipCarrying[i]);
+			if (otherState.shipCarrying[i] != null) {
+				shipCarrying[i] = new ResourcePile(otherState.shipCarrying[i]);
+			}
+			else{
+				shipCarrying[i] = new ResourcePile();
+			}
 		}
 		shipOnStandby = otherState.shipOnStandby;
 		shipCarryingFlag = otherState.shipCarryingFlag;
-		
+
 		asteroidID = new ArrayList<UUID>(otherState.asteroidID);
 		asteroidClaimedBy = otherState.asteroidClaimedBy.clone();
 
