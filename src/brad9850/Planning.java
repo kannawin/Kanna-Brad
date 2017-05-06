@@ -225,7 +225,8 @@ public class Planning {
 	private static PlanState returnToBase(PlanState oldState, int ship){
 		PlanState state = new PlanState(oldState);
 		if(state.shipBought[ship]
-				&& state.shipOnStandby != ship){
+				&& state.shipOnStandby != ship
+				&& (state.shipCarryingFlag == ship || state.shipCarrying[ship].getTotal() > 0)){
 			
 			//Remove any resources the ship might have
 			state.totalResources.add(state.shipCarrying[ship]);

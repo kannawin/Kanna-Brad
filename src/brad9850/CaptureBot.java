@@ -91,7 +91,7 @@ public class CaptureBot extends TeamClient {
 				//Have the home base plan what 
 				Base base = (Base) actionable;
 				if(base.isHomeBase() && space.getCurrentTimestep() % 20 == 0){
-					plannedActions = Planning.plan(space, new PlanState(space, base.getTeamName()), 2);
+					plannedActions = Planning.plan(space, new PlanState(space, base.getTeamName()), 1);
 				}
 			}
 		} 
