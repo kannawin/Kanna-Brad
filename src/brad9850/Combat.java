@@ -22,31 +22,6 @@ import spacesettlers.utilities.Vector2D;
 
 public class Combat {
 
-	
-	/**
-	 * See if a team is a non-AI enemy
-	 * 
-	 * @param teamName The name of the team we are checking
-	 * @param friendlyTeamName The name of our team
-	 */
-	public static boolean isHumanEnemyTeam(String teamName, String friendlyTeamName){
-		//See if it's our name
-		if(teamName.equalsIgnoreCase(friendlyTeamName)){
-			return false;
-		}
-
-		String[] aiNames = {"RandomTeam", "DoNothingTeam", "HeuristicTeam"};
-		//See if it's an AI name
-		for(String name: aiNames){
-			if(teamName.equalsIgnoreCase(name)){
-				return false;
-			}
-		}
-		
-		//Otherwise, it's a human enemy
-		return true;
-	}
-
 	/**
 	 * Find the base for an enemy team nearest to this ship
 	 * 
@@ -126,6 +101,22 @@ public class Combat {
 			}
 		}
 		return energy;
+	}
+	
+	/**
+	 * See whether an object is your enemy
+	 * @param target
+	 * @param ship
+	 * @return
+	 */
+	public static boolean isEnemy(AbstractObject target, Ship ship){
+		if(target instanceof AbstractActionableObject){
+			AbstractActionableObject targetShip = (AbstractActionableObject) target;
+			if(!ship.getTeamName().equalsIgnoreCase(targetShip.getTeamName())){
+				return true;
+			}
+		}
+		return false;
 	}
 	
 	/**
@@ -254,17 +245,29 @@ public class Combat {
 	
 	/**
 	 * See if shooting now will let us hit a moving target, assuming no obstructions
-	 * @param space
-	 * @param ship
-	 * @param target
-	 * @param targetEstimatedVelocity
+	 * @return
+	 */
+	public static boolean willHitMovingTarget(Toroidal2DPhysics space, Ship ship, Position targetPosition, Vector2D targetEstimatedVelocity){
+		return willHitMovingTarget(space, ship, targetPosition, ship.getRadius(), targetEstimatedVelocity);
+	}
+	
+	/**
+	 * See if shooting now will let us hit a moving target, assuming no obstructions
 	 * @return
 	 */
 	public static boolean willHitMovingTarget(Toroidal2DPhysics space, Ship ship, AbstractObject target, Vector2D targetEstimatedVelocity){
+		return willHitMovingTarget(space, ship, target.getPosition(), target.getRadius(), targetEstimatedVelocity);
+	}
+	
+	/**
+	 * See if shooting now will let us hit a moving target, assuming no obstructions
+	 * @return
+	 */
+	public static boolean willHitMovingTarget(Toroidal2DPhysics space, Ship ship, Position targetPosition, double targetRadius, Vector2D targetEstimatedVelocity){
 		Position missilePosition = simulateMissile(ship);
 		
 		double timeUntilCollision = timeUntilCollision(space, missilePosition, Missile.MISSILE_RADIUS, missilePosition.getTranslationalVelocity(),
-				space.getObjectById(target.getId()).getPosition(), target.getRadius(), targetEstimatedVelocity);
+				targetPosition, targetRadius, targetEstimatedVelocity);
 
 		if(timeUntilCollision >= 0){
 			return true;

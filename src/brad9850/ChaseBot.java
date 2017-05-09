@@ -42,7 +42,7 @@ public class ChaseBot extends TeamClient {
 	boolean shouldShoot = false;
 	
 	UUID targetID = null;
-	ArrayList<UUID> path = new ArrayList<UUID>();
+	ArrayList<Position> path = new ArrayList<Position>();
 	
 	int lastTimestep = 0;
 	private ArrayList<SpacewarGraphics> graphicsToAdd;
@@ -53,6 +53,7 @@ public class ChaseBot extends TeamClient {
 	public final boolean Drawing = true;
 	
 	Position previousPosition = null;
+	UUID previousMovementTargetUUID = null;
 	
 	int sum = 0;
 	int count = 0;
@@ -107,33 +108,34 @@ public class ChaseBot extends TeamClient {
 			movementGoal = Combat.nearestBeacon(space, ship);
 		}
 		
+		previousMovementTargetUUID = movementGoal.getId();
 		//If it's time to generate a new path, do it
 		if(space.getCurrentTimestep() - this.lastTimestep > PathingFrequency
 				|| this.path.size() == 0
-				|| this.path.get(this.path.size() - 1) != movementGoal.getId() ){
+				|| previousMovementTargetUUID != movementGoal.getId() ){
 			this.lastTimestep = space.getCurrentTimestep();
 			this.path = Pathing.findPath(space, ship, movementGoal);
 		}
 				
 		//Get a waypoint to move to
 		//If we're already really close to it, find the next target
-		AbstractObject waypoint = space.getObjectById(this.path.get(0));
-		while(waypoint != null && space.findShortestDistance(ship.getPosition(), waypoint.getPosition()) < ship.getRadius() + waypoint.getRadius()){
+		Position waypoint = this.path.get(0);
+		while(waypoint != null && space.findShortestDistance(ship.getPosition(), waypoint) < ship.getRadius() * 2){
 			this.path.remove(0);
 			waypoint = null;
 			if(this.path.size() > 0){
-				waypoint = space.getObjectById(this.path.get(0));
+				waypoint = this.path.get(0);
 			}
 		}
 		
 		//If we have no other waypoint, aim at our target
 		if(waypoint == null){
-			waypoint = target;
+			waypoint = target.getPosition();
 		}
 		
 		//Get the movement to our waypoint
 		int distanceFactor = 150;
-		newAction = Vectoring.advancedMovementVector(space, ship, waypoint, distanceFactor);
+		newAction = Vectoring.advancedMovementVector(space, ship, waypoint, false, distanceFactor);
 		
 		
 		//Decide if we should shoot		
@@ -185,7 +187,7 @@ public class ChaseBot extends TeamClient {
 		}
 		
 		Position shipPosition = ship.getPosition();
-		Position targetPosition = space.getObjectById(this.path.get(this.path.size() - 1)).getPosition();
+		Position targetPosition = this.path.get(this.path.size() - 1);
 		
 		LineGraphics targetLine = new LineGraphics(shipPosition, targetPosition, space.findShortestDistanceVector(shipPosition, targetPosition));
 		targetLine.setLineColor(Color.RED);
@@ -193,13 +195,13 @@ public class ChaseBot extends TeamClient {
 		
 		for(int i = 0; i < path.size(); i++){
 			//TODO: Solve root cause of this, and of all evil
-			if(space.getObjectById(path.get(i)) == null){
-				break;
-			}
-			Position thisPosition = space.getObjectById(path.get(i)).getPosition();
+//			if(space.getObjectById(path.get(i)) == null){
+//				break;
+//			}
+			Position thisPosition = path.get(i);
 			Position previousPosition = ship.getPosition();
 			if(i > 0){
-				previousPosition = space.getObjectById(path.get(i - 1)).getPosition();
+				previousPosition = path.get(i - 1);
 			}
 			
 			graphicsToAdd.add(new StarGraphics(3, Color.WHITE, thisPosition));

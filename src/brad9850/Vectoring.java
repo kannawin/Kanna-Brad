@@ -34,12 +34,12 @@ public class Vectoring {
 	 * equivalent of a slow moving sprinkler
 	 * 
 	 * @param space
-	 * @param target
+	 * @param targetPosition
 	 * @param ship
 	 * @return
 	 */
 	@SuppressWarnings("static-access")
-	public static Queue<Integer> aimHelp(Toroidal2DPhysics space, AbstractObject target, Ship ship) {
+	public static Queue<Integer> aimHelp(Toroidal2DPhysics space, Position targetPosition, Ship ship) {
 		// use the function for distance covered, solve for t(time steps)
 		// (1/2)*d = 2*vi*t + a*t^2
 
@@ -57,7 +57,7 @@ public class Vectoring {
 		// target.getPosition()).angleBetween(vectorA);
 
 		double compensator = ship.getPosition().getOrientation();
-		double compensateTo = angleBetween(space, ship, target);
+		double compensateTo = angleBetween(space, ship, targetPosition);
 		double d = compensator - compensateTo;
 
 		// total time steps to get to the position
@@ -94,36 +94,36 @@ public class Vectoring {
 	 * 
 	 * @param space
 	 * @param ship
-	 * @param target
+	 * @param targetPosition
 	 * @param velocity
 	 * @return
 	 */
 	@SuppressWarnings("static-access") // Because Vector2D().fromAngle() cannot
 										// be accessed in a static way
-	public static AbstractAction nextVector(Toroidal2DPhysics space, Ship ship, AbstractObject target,
+	public static AbstractAction nextVector(Toroidal2DPhysics space, Ship ship, Position targetPosition,
 			double velocity) {
 		// target self if can't resolve a target
 		Vector2D direction = null;
-		if (target == null) {
-			target = ship;
+		if (targetPosition == null) {
+			targetPosition = ship.getPosition();
 		} else
-			direction = space.findShortestDistanceVector(ship.getPosition(), target.getPosition());
+			direction = space.findShortestDistanceVector(ship.getPosition(), targetPosition);
 
 		Vector2D gotoPlace = new Vector2D();
 		// use that angle for which it is going to accelerate, and set the
 		// magnitude up
-		if (target != ship)
+		if (!targetPosition.equalsLocationOnly(ship.getPosition()))
 			gotoPlace = gotoPlace.fromAngle(direction.getAngle(), velocity);
 		else
 			gotoPlace = new Vector2D(ship.getPosition());
 
 		double compensator = ship.getPosition().getOrientation();
-		double compensateTo = angleBetween(space, ship, target);
+		double compensateTo = angleBetween(space, ship, targetPosition);
 		double compensate = compensator - compensateTo + 2 * Math.PI;
 		gotoPlace.rotate(compensate);
 
 		// set the ship in motion
-		AbstractAction sendOff = new MoveAction(space, ship.getPosition(), target.getPosition(), gotoPlace);
+		AbstractAction sendOff = new MoveAction(space, ship.getPosition(), targetPosition, gotoPlace);
 		return sendOff;
 	}
 
@@ -134,18 +134,17 @@ public class Vectoring {
 	 * 
 	 * @param space
 	 * @param ship
-	 * @param target
+	 * @param targetPosition
 	 * @param distanceFactor
 	 * @return
 	 */
-	public static AbstractAction advancedMovementVector(Toroidal2DPhysics space, Ship ship, AbstractObject target,
-			int distanceFactor) {
+	public static AbstractAction advancedMovementVector(Toroidal2DPhysics space, Ship ship, Position targetPosition, boolean solidTarget, int distanceFactor) {
 		// speed adjustments relative to max accel
 		double movementFactor = 1.6;
-		double movementMax = Movement.MAX_TRANSLATIONAL_ACCELERATION * movementFactor;
+		double movementMax = 55;
 
 		AbstractAction sendOff = null;
-		double distance = space.findShortestDistance(ship.getPosition(), target.getPosition());
+		double distance = space.findShortestDistance(ship.getPosition(), targetPosition);
 
 		// gets a set of non shootable asteroids
 		Set<AbstractObject> asteroids = new HashSet<AbstractObject>();
@@ -160,78 +159,28 @@ public class Vectoring {
 		if (distance < distanceFactor) {
 			double adjustedVelocity = (distance / distanceFactor) * (movementMax / (movementFactor * 1.25));
 
-			if (target.getClass() == Beacon.class
-					&& (Combat.willHitMovingTarget(space, ship, target, target.getPosition().getTranslationalVelocity())
+			if (!solidTarget
+					&& (Combat.willHitMovingTarget(space, ship, targetPosition, targetPosition.getTranslationalVelocity())
 							|| ship.getPosition().getTotalTranslationalVelocity() < movementMax * .1)) {
 
-				sendOff = nextVector(space, ship, target, movementMax);
+				sendOff = nextVector(space, ship, targetPosition, movementMax);
 			} else {
 				// TODO make a quick rotate and rotation compensator action
 				// method for this
-				sendOff = nextVector(space, ship, target, adjustedVelocity);
+				sendOff = nextVector(space, ship, targetPosition, adjustedVelocity);
 			}
 		}
 		// if path is clear it will go
-		else if (space.isPathClearOfObstructions(ship.getPosition(), target.getPosition(), asteroids, 0)) {
-			sendOff = nextVector(space, ship, target, movementMax);
+		else if (space.isPathClearOfObstructions(ship.getPosition(), targetPosition, asteroids, 0)) {
+			sendOff = nextVector(space, ship, targetPosition, movementMax);
 		}
 
 		// else it will find a new target
 		else {
-			sendOff = nextVector(space, ship, nextFreeVector(space, ship, target), movementMax);
+			sendOff = nextVector(space, ship, targetPosition, movementMax);
 		}
 
 		return sendOff;
-	}
-
-	/**
-	 * Helper function of the advanced vectoring function, it finds the next
-	 * closest free object with a clear path of the same type that the original
-	 * target was on
-	 * 
-	 * @param space
-	 * @param ship
-	 * @param target
-	 * @return
-	 */
-	private static AbstractObject nextFreeVector(Toroidal2DPhysics space, Ship ship, AbstractObject target) {
-		Set<AbstractObject> objSet = space.getAllObjects();
-		ArrayList<AbstractObject> targetObjs = new ArrayList<AbstractObject>();
-
-		double minDistance = Double.MAX_VALUE;
-		AbstractObject gotoTarget = null;
-
-		// get objects of the same type
-		// TODO Adjust for shooting stuff, gathering resources, or getting
-		// beacons
-		for (AbstractObject obj : objSet) {
-			if (obj.getClass() == target.getClass()) {
-				targetObjs.add(obj);
-			}
-		}
-		// collects all the asteroids you can't fly through
-		Set<AbstractObject> nonShootable = new HashSet<AbstractObject>();
-		for (Asteroid asteroid : space.getAsteroids()) {
-			if (!asteroid.isMineable()) {
-				nonShootable.add(asteroid);
-			}
-		}
-		// adds bases as impassable objects too
-		for (Base bases : space.getBases()) {
-			nonShootable.add(bases);
-		}
-
-		// finds the shortest free path
-		for (AbstractObject obj : targetObjs) {
-			double distance = space.findShortestDistance(ship.getPosition(), target.getPosition());
-			if (distance < minDistance
-					&& space.isPathClearOfObstructions(ship.getPosition(), obj.getPosition(), nonShootable, 2)) {
-				minDistance = distance;
-				gotoTarget = obj;
-			}
-		}
-
-		return gotoTarget;
 	}
 
 	/**
@@ -239,12 +188,12 @@ public class Vectoring {
 	 * 
 	 * @param space
 	 * @param ship
-	 * @param target
+	 * @param targetPosition
 	 * @return
 	 */
-	public static double angleBetween(Toroidal2DPhysics space, Ship ship, AbstractObject target) {
+	public static double angleBetween(Toroidal2DPhysics space, Ship ship, Position targetPosition) {
 		Vector2D pos1 = new Vector2D(ship.getPosition());
-		Vector2D pos2 = new Vector2D(target.getPosition());
+		Vector2D pos2 = new Vector2D(targetPosition);
 
 		double angle = pos1.angleBetween(pos2);
 

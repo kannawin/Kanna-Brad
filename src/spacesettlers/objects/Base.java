@@ -1,17 +1,12 @@
 package spacesettlers.objects;
 
 import java.awt.Color;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.UUID;
+import java.util.LinkedHashSet;
 
 import spacesettlers.clients.Team;
 import spacesettlers.graphics.BaseGraphics;
 import spacesettlers.objects.powerups.SpaceSettlersPowerupEnum;
 import spacesettlers.objects.resources.ResourcePile;
-import spacesettlers.objects.resources.ResourceTypes;
 import spacesettlers.utilities.Position;
 
 /**
@@ -73,11 +68,12 @@ public class Base extends AbstractActionableObject {
 		newBase.setAlive(isAlive);
 		newBase.id = id;
 		newBase.maxEnergy = maxEnergy;
-		newBase.currentPowerups = new HashSet<SpaceSettlersPowerupEnum>(currentPowerups);
+		newBase.currentPowerups = new LinkedHashSet<SpaceSettlersPowerupEnum>(currentPowerups);
 		newBase.weaponCapacity = weaponCapacity;
 		newBase.healingIncrement = healingIncrement;
 		newBase.resources = new ResourcePile();
 		newBase.resources.add(resources);
+		newBase.numFlags = numFlags;
 		return newBase;
 	}
 
@@ -135,6 +131,18 @@ public class Base extends AbstractActionableObject {
 		team.incrementTotalResources(newResources);
 		team.incrementAvailableResources(newResources);
 	}
+	
+	/**
+	 * Add a flag to this team.  The flag itself is then killed so it can regenerate.
+	 * 
+	 * @param flag
+	 */
+	public void addFlag(Flag flag) {
+		flag.depositFlag();
+		super.incrementFlags();
+		team.incrementTotalFlagsCollected();
+	}
+	
 
 	/**
 	 * Change the healing energy (from a collision or just time healing it)

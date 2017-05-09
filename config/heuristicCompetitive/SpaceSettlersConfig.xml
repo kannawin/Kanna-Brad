@@ -31,8 +31,8 @@
 		     to the configuration file for that team.  Also, teams can have initial bounding boxes
 		     which bound where the ships and the base will be created. -->
 		<HighLevelTeamConfig>
-			<teamName>ChaseBot</teamName>
-			<configFile>ChaseBot-clientinit.xml</configFile>
+			<teamName>RandomClient</teamName>
+			<configFile>random-clientinit.xml</configFile>
 		</HighLevelTeamConfig>
 		<HighLevelTeamConfig>
 			<teamName>BeaconCollectorTeam</teamName>
@@ -45,18 +45,14 @@
 		</HighLevelTeamConfig>
 		<HighLevelTeamConfig>
 			<teamName>DoNothingTeam</teamName>
-			<configFile>beacon-clientinit.xml</configFile>
+			<configFile>donothing-clientinit.xml</configFile>
 		</HighLevelTeamConfig>		
-		<HighLevelTeamConfig>
-			<teamName>GABOT</teamName>
-			<configFile>ga-clientinit.xml</configFile>
-		</HighLevelTeamConfig>	
 	</teams>
 
 	<!-- Each team needs a base.  Optionally, you can initialize the location of the base -->
 	<bases>
 		<BaseConfig>
-			<teamName>ChaseBot</teamName>
+			<teamName>RandomClient</teamName>
 		</BaseConfig>
 		<BaseConfig>
 			<teamName>BeaconCollectorTeam</teamName>
@@ -67,13 +63,10 @@
 		<BaseConfig>
 			<teamName>DoNothingTeam</teamName>
 		</BaseConfig>
-		<BaseConfig>
-			<teamName>GABOT</teamName>
-		</BaseConfig>
 	</bases>
 	
 	<!-- Specify the options for creating asteroids.  Their locations are random. -->
-	<asteroids>
+	<randomAsteroids>
 		<!-- The probability that a newly spawned asteroid will be mineable -->
 		<probabilityMineable>0.5</probabilityMineable>
 		
@@ -93,6 +86,6 @@
 		<probabilityFuelType>0.2</probabilityFuelType>
 		<probabilityWaterType>0.5</probabilityWaterType>
 		<probabilityMetalsType>0.3</probabilityMetalsType>
-	</asteroids>
+	</randomAsteroids>
 	
 </SpaceSettlersConfig>

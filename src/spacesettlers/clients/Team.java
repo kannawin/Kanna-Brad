@@ -5,7 +5,7 @@ import java.awt.event.KeyAdapter;
 import java.awt.event.MouseAdapter;
 import java.awt.geom.AffineTransform;
 import java.util.HashMap;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -77,6 +77,11 @@ public class Team {
 	double score;
 	
 	/**
+	 * The number of flags collected by this team
+	 */
+	int totalFlagsCollected;
+	
+	/**
 	 * available (unspent) resourcesAvailable from the asteroids and the total resourcesAvailable earned
 	 */
 	ResourcePile availableResources, totalResources;
@@ -131,9 +136,9 @@ public class Team {
 	 * Initialize the team client to have an empty list of ships.
 	 */
 	public Team(TeamClient teamClient, String ladderName, int maxNumberShips) {
-		this.teamShips = new HashSet<Ship>();
-		this.teamBaseIDs = new HashSet<UUID>();
-		this.teamIDs = new HashSet<UUID>();
+		this.teamShips = new LinkedHashSet<Ship>();
+		this.teamBaseIDs = new LinkedHashSet<UUID>();
+		this.teamIDs = new LinkedHashSet<UUID>();
 		this.teamClient = teamClient;
 		this.teamColor = teamClient.getTeamColor();
 		this.teamName = teamClient.getTeamName();
@@ -148,6 +153,7 @@ public class Team {
 		this.totalKillsReceived = 0;
 		this.totalDamageInflicted = 0;
 		this.totalDamageReceived = 0;
+		this.totalFlagsCollected = 0;
 		executor = null;
 	}
 	
@@ -179,6 +185,7 @@ public class Team {
 		newTeam.totalKillsReceived = this.totalKillsReceived;
 		newTeam.totalDamageInflicted = this.totalDamageInflicted;
 		newTeam.totalDamageReceived = this.totalDamageReceived;
+		newTeam.totalFlagsCollected = this.totalFlagsCollected;
 		return newTeam;
 	}
 	
@@ -197,7 +204,7 @@ public class Team {
 	 * @return
 	 */
 	private Set<AbstractActionableObject> getTeamActionableObjectsClone(Toroidal2DPhysics space) {
-		Set<AbstractActionableObject> clones = new HashSet<AbstractActionableObject>();
+		Set<AbstractActionableObject> clones = new LinkedHashSet<AbstractActionableObject>();
 		
 		for (Ship ship : teamShips) {
 			clones.add(ship.deepClone());
@@ -618,7 +625,7 @@ public class Team {
 	 * @return  
 	 */
 	public Set<SpacewarGraphics> getGraphics() {
-        Set<SpacewarGraphics> graphics = new HashSet<SpacewarGraphics>();
+        Set<SpacewarGraphics> graphics = new LinkedHashSet<SpacewarGraphics>();
 
         // if the previous thread call hasn't finished, then just return default
 		if (executor == null || executor.isTerminated()) {
@@ -642,20 +649,20 @@ public class Team {
             //was terminated
         	//set empty array of graphics
         	System.out.println(getTeamName() + " timed out in getTeamGraphics");
-        	graphics = new HashSet<SpacewarGraphics>();
+        	graphics = new LinkedHashSet<SpacewarGraphics>();
         } catch (InterruptedException e) {
         	//we were interrupted (should not happen but lets be good programmers) 
         	//set empty array of graphics
-        	graphics = new HashSet<SpacewarGraphics>();
+        	graphics = new LinkedHashSet<SpacewarGraphics>();
 			e.printStackTrace();
 		} catch (ExecutionException e) {
 			//the executor threw and exception (should not happen but lets be good programmers) 
 			//set empty array of graphics
-        	graphics = new HashSet<SpacewarGraphics>();
+        	graphics = new LinkedHashSet<SpacewarGraphics>();
 			e.printStackTrace();
 		} catch (Exception e) {
 			System.err.println("Error in agent.  Printing stack trace");
-        	graphics = new HashSet<SpacewarGraphics>();
+        	graphics = new LinkedHashSet<SpacewarGraphics>();
 			e.printStackTrace();
 		}
 
@@ -823,6 +830,21 @@ public class Team {
 	 */
 	public ResourcePile getTotalResources() {
 		return totalResources;
+	}
+
+	/**
+	 * Get the total flags collected by this team
+	 * @return
+	 */
+	public int getTotalFlagsCollected() {
+		return totalFlagsCollected;
+	}
+
+	/**
+	 * Increment the total flags collected by this team
+	 */
+	public void incrementTotalFlagsCollected() {
+		this.totalFlagsCollected++;
 	}
 
 	
